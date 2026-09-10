@@ -1,14 +1,22 @@
 PluginInfo = {
   Name = "Monitoring~Reflect Monitor Extension",
-  Version = "1.0.0",
+  Version = "1.1.0",
   Id = "25e1094b-2862-474e-bad6-5e91bbbfc49a",
-  Description = [[Monitor selected controls on a named component through a Q-SYS Monitoring Proxy.]],
+  Description = [[Monitor selected controls through a Q-SYS Monitoring Proxy or directly on a Reflect Ready component.]],
   Author = "Jens Claerebout",
   ShowDebug = true
 }
 
 local function controlCount(props)
   return math.max(1, math.min(32, math.floor(tonumber(props["Number of Controls"].Value) or 1)))
+end
+
+local function isReflectReady(props)
+  return props["Reflect Ready"] ~= nil and props["Reflect Ready"].Value == true
+end
+
+local function compromisedSeverity(value)
+  return value == "error" and "error" or "warning"
 end
 
 function GetProperties()
@@ -19,6 +27,11 @@ function GetProperties()
       Value = 1,
       Min = 1,
       Max = 32
+    },
+    {
+      Name = "Reflect Ready",
+      Type = "boolean",
+      Value = false
     }
   }
 end
@@ -39,6 +52,13 @@ end
 function GetControls(props)
   local count = controlCount(props)
   return {
+    {
+      Name = "Status",
+      ControlType = "Indicator",
+      IndicatorType = "Status",
+      Count = 1,
+      UserPin = false
+    },
     {
       Name = "Component",
       ControlType = "Text",
@@ -86,6 +106,12 @@ function GetControls(props)
       UserPin = false
     },
     {
+      Name = "NormalLogEntry",
+      ControlType = "Text",
+      Count = count,
+      UserPin = false
+    },
+    {
       Name = "Severity",
       ControlType = "Text",
       Count = count,
@@ -104,7 +130,10 @@ function GetControlLayout(props)
   local count = controlCount(props)
   local rowHeight = 29
   local rowGap = 5
-  local firstRowY = 151
+  local reflectReady = isReflectReady(props)
+  local firstRowY = reflectReady and 151 or 192
+  local statusY = reflectReady and 68 or 109
+  local headerY = firstRowY - 38
   local panelHeight = firstRowY + count * (rowHeight + rowGap) + 18
 
   local function arrayName(name, index)
@@ -126,13 +155,24 @@ function GetControlLayout(props)
   table.insert(graphics, {
     Type = "GroupBox",
     Position = { 10, 10 },
-    Size = { 940, panelHeight - 10 },
+    Size = { reflectReady and 940 or 1240, panelHeight - 10 },
     StrokeWidth = 1,
     CornerRadius = 8
   })
 
   addLabel("Component/Plugin", 35, 27, 145, 31, "Left", 15)
-  addLabel("Monitoring Proxy", 35, 68, 145, 31, "Left", 15)
+  if not reflectReady then
+    addLabel("Monitoring Proxy", 35, 68, 145, 31, "Left", 15)
+  end
+  addLabel("Status", 35, statusY, 145, 31, "Left", 15)
+
+  layout.Status = {
+    PrettyName = "Status",
+    Position = { 180, statusY },
+    Size = { 650, 31 },
+    Style = "Text",
+    TextFontSize = 14
+  }
 
   layout.Component = {
     PrettyName = "Component/Plugin",
@@ -142,13 +182,15 @@ function GetControlLayout(props)
     TextFontSize = 14
   }
 
-  layout.Monitor = {
-    PrettyName = "Monitoring Proxy",
-    Position = { 180, 68 },
-    Size = { 650, 31 },
-    Style = "ComboBox",
-    TextFontSize = 14
-  }
+  if not reflectReady then
+    layout.Monitor = {
+      PrettyName = "Monitoring Proxy",
+      Position = { 180, 68 },
+      Size = { 650, 31 },
+      Style = "ComboBox",
+      TextFontSize = 14
+    }
+  end
 
   layout.Lock = {
     PrettyName = "Lock Configuration",
@@ -158,11 +200,14 @@ function GetControlLayout(props)
     TextFontSize = 12
   }
 
-  addLabel("Control", 40, 113, 185, 28, "Center", 15)
-  addLabel("Alias", 225, 113, 180, 28, "Center", 15)
-  addLabel("Value", 405, 113, 125, 28, "Center", 15)
-  addLabel("LogEntry", 530, 113, 300, 28, "Center", 15)
-  addLabel("Severity", 830, 113, 105, 28, "Center", 15)
+  addLabel("Control", 40, headerY, 185, 28, "Center", 15)
+  addLabel("Alias", 225, headerY, 180, 28, "Center", 15)
+  addLabel("Value", 405, headerY, 125, 28, "Center", 15)
+  if not reflectReady then
+    addLabel("Compromised Log Entry", 530, headerY, 300, 28, "Center", 15)
+    addLabel("Back to Normal Log Entry", 830, headerY, 300, 28, "Center", 15)
+    addLabel("Severity", 1130, headerY, 105, 28, "Center", 15)
+  end
 
   for index = 1, count do
     local y = firstRowY + (index - 1) * (rowHeight + rowGap)
@@ -189,21 +234,49 @@ function GetControlLayout(props)
       Style = "Text",
       TextFontSize = 12
     }
-    layout[arrayName("LogEntry", index)] = {
-      PrettyName = "LogEntry" .. suffix,
-      Position = { 530, y },
-      Size = { 300, rowHeight },
-      Style = "Text",
-      TextFontSize = 12
-    }
-    layout[arrayName("Severity", index)] = {
-      PrettyName = "Severity" .. suffix,
-      Position = { 830, y },
-      Size = { 105, rowHeight },
-      Style = "ComboBox",
-      TextFontSize = 12
-    }
+    if not reflectReady then
+      layout[arrayName("LogEntry", index)] = {
+        PrettyName = "Compromised Log Entry" .. suffix,
+        Position = { 530, y },
+        Size = { 300, rowHeight },
+        Style = "Text",
+        TextFontSize = 12
+      }
+      layout[arrayName("NormalLogEntry", index)] = {
+        PrettyName = "Back to Normal Log Entry" .. suffix,
+        Position = { 830, y },
+        Size = { 300, rowHeight },
+        Style = "Text",
+        TextFontSize = 12
+      }
+      layout[arrayName("Severity", index)] = {
+        PrettyName = "Severity" .. suffix,
+        Position = { 1130, y },
+        Size = { 105, rowHeight },
+        Style = "ComboBox",
+        TextFontSize = 12
+      }
+    end
   end
+
+  -- Keep both layouts and all row counts at the same compact scale.
+  local function compact(item)
+    for _, key in ipairs({ "Position", "Size" }) do
+      if item[key] then
+        for axis = 1, 2 do
+          item[key][axis] = math.floor(item[key][axis] * 0.8 + 0.5)
+        end
+      end
+    end
+    for _, key in ipairs({ "TextSize", "TextFontSize" }) do
+      if item[key] then
+        item[key] = math.max(10, math.floor(item[key] * 0.8 + 0.5))
+      end
+    end
+  end
+
+  for _, item in pairs(layout) do compact(item) end
+  for _, item in ipairs(graphics) do compact(item) end
 
   return layout, graphics
 end
@@ -221,6 +294,7 @@ local repeatedControlNames = {
   Alias = true,
   Value = true,
   LogEntry = true,
+  NormalLogEntry = true,
   Severity = true
 }
 local configuredControlCount = math.max(
@@ -238,6 +312,11 @@ local Controls = setmetatable({}, {
 })
 
 local STATE_FILE_PREFIX = "media/Mon Proxy Extension State - "
+local reflectReady = isReflectReady(Properties)
+local nativeStatusValue = 0
+local nativeStatusText = "OK"
+local lastDirectStatusValue = nil
+local lastDirectStatusText = nil
 local COLOR_OK = "#00A651"
 local COLOR_CHANGED = "#F5A000"
 local COLOR_LOCKED = "#D32F2F"
@@ -266,6 +345,11 @@ local function stateFilePath()
   local monitorName = lockedMonitorName
   if monitorName == "" and Controls.Monitor then
     monitorName = Controls.Monitor.String
+  end
+  if reflectReady then
+    monitorName = lockedComponentName ~= "" and lockedComponentName or Controls.Component.String
+    if monitorName == "" then return nil end
+    monitorName = "Reflect Ready - " .. monitorName
   end
   if monitorName == "" then return nil end
 
@@ -331,14 +415,6 @@ local function setValueColor(control, color)
 end
 
 local function setMonitorStatus(value, message, allowMissing)
-  if not monitorComponent then return end
-
-  local targetStatus = monitorComponent["status"]
-  if not targetStatus then
-    print("Selected Monitoring Proxy has no 'status' control")
-    return
-  end
-
   local requestedValue = tonumber(value) or 0
   print(string.format(
     "[Monitor Debug] status request: value=%s, message=%q, allowMissing=%s",
@@ -350,6 +426,51 @@ local function setMonitorStatus(value, message, allowMissing)
   end
 
   local requestedMessage = tostring(message or "")
+  Controls.Status.Value = requestedValue
+  Controls.Status.String = requestedMessage
+
+  if reflectReady then
+    if not sourceStatus then
+      Controls.Status.Value = 1
+      Controls.Status.String = sourceComponent
+        and "Selected component has no Status control" or "Selected component is unavailable"
+      return
+    end
+    if tonumber(controlValue(sourceStatus)) == requestedValue
+      and controlText(sourceStatus) == requestedMessage then return end
+    lastDirectStatusValue = requestedValue
+    lastDirectStatusText = requestedMessage
+    updatingMonitorStatus = true
+    local ok, err = pcall(function()
+      sourceStatus.Value = requestedValue
+      sourceStatus.String = requestedMessage
+    end)
+    updatingMonitorStatus = false
+    if not ok then
+      lastDirectStatusValue = nil
+      lastDirectStatusText = nil
+      Controls.Status.Value = 1
+      Controls.Status.String = "Unable to update selected component status"
+      logError(Controls.Status.String, err)
+    end
+    return
+  end
+
+  if not monitorComponent then
+    Controls.Status.Value = 1
+    Controls.Status.String = Controls.Monitor.String == ""
+      and "Select a Monitoring Proxy" or "Selected Monitoring Proxy is unavailable"
+    return
+  end
+
+  local targetStatus = monitorComponent["status"]
+  if not targetStatus then
+    Controls.Status.Value = 1
+    Controls.Status.String = "Selected Monitoring Proxy has no 'status' control"
+    print(Controls.Status.String)
+    return
+  end
+
   desiredMonitorStatusValue = requestedValue
   desiredMonitorStatusMessage = requestedMessage
   local currentValue = tonumber(controlValue(targetStatus))
@@ -394,7 +515,11 @@ local function setMonitorStatus(value, message, allowMissing)
     end
   end)
   updatingMonitorStatus = false
-  if not ok then logError("Unable to update Monitoring Proxy status", err) end
+  if not ok then
+    Controls.Status.Value = 1
+    Controls.Status.String = "Unable to update Monitoring Proxy status"
+    logError("Unable to update Monitoring Proxy status", err)
+  end
 end
 
 local function monitorStatusChanged(control)
@@ -427,13 +552,15 @@ local function monitorStatusChanged(control)
 end
 
 local function sendMonitorLog(message, severity)
-  if not monitorComponent then return end
+  if reflectReady then return end
+  local target = monitorComponent
+  if not target then return end
 
-  local targetLogEntry = monitorComponent["log.entry"]
-  local targetSeverity = monitorComponent["severity"]
-  local targetTrigger = monitorComponent["trigger"]
+  local targetLogEntry = target["log.entry"]
+  local targetSeverity = target["severity"]
+  local targetTrigger = target["trigger"]
   if not targetLogEntry or not targetSeverity or not targetTrigger then
-    print("Selected Monitoring Proxy requires 'log.entry', 'severity', and 'trigger' controls")
+    print("Monitoring target requires 'log.entry', 'severity', and 'trigger' controls for log entries")
     return
   end
 
@@ -467,7 +594,7 @@ end
 local function saveState(locked)
   local path = stateFilePath()
   if not path then
-    logError("Unable to save monitor state", "no Monitoring Proxy is selected")
+    logError("Unable to save monitor state", reflectReady and "no component is selected" or "no Monitoring Proxy is selected")
     return false
   end
 
@@ -477,7 +604,7 @@ local function saveState(locked)
     return false
   end
 
-  file:write("version\t3\n")
+  file:write("version\t4\n")
   file:write("locked\t", locked and "1" or "0", "\n")
   file:write("component\t", escapeField(lockedComponentName), "\n")
   file:write("monitor\t", escapeField(lockedMonitorName), "\n")
@@ -489,8 +616,9 @@ local function saveState(locked)
       escapeField(item.name), "\t",
       escapeField(item.value), "\t",
       escapeField(item.logEntry), "\t",
-      escapeField(item.severity or "normal"), "\t",
-      escapeField(item.alias), "\n"
+      escapeField(compromisedSeverity(item.severity)), "\t",
+      escapeField(item.alias), "\t",
+      escapeField(item.normalLogEntry), "\n"
     )
   end
 
@@ -516,8 +644,12 @@ local function loadState()
     elseif key == "monitor" then
       state.monitor = unescapeField(rest)
     elseif key == "slot" then
-      local index, name, value, logEntry, severity, alias =
-        rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+      local index, name, value, logEntry, severity, alias, normalLogEntry =
+        rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+      if not index then
+        index, name, value, logEntry, severity, alias =
+          rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+      end
       if not index then
         index, name, value, logEntry, severity =
           rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
@@ -531,7 +663,8 @@ local function loadState()
           name = unescapeField(name),
           value = unescapeField(value),
           logEntry = unescapeField(logEntry),
-          severity = unescapeField(severity or "normal"),
+          severity = compromisedSeverity(unescapeField(severity)),
+          normalLogEntry = unescapeField(normalLogEntry),
           alias = unescapeField(alias)
         }
       end
@@ -556,7 +689,8 @@ local function resetControlSlots()
     Controls.Value[index].String = ""
     Controls.Alias[index].String = ""
     Controls.LogEntry[index].String = ""
-    Controls.Severity[index].String = "normal"
+    Controls.NormalLogEntry[index].String = ""
+    Controls.Severity[index].String = "warning"
     setValueColor(Controls.Value[index], COLOR_OK)
   end
   changingControl = false
@@ -565,6 +699,7 @@ local function resetControlSlots()
 end
 
 local function releaseSourceHandlers()
+  if sourceStatus then pcall(function() sourceStatus.EventHandler = nil end) end
   for _, control in pairs(sourceControls) do
     pcall(function() control.EventHandler = nil end)
   end
@@ -578,6 +713,13 @@ local function bindSourceHandlers()
     if not control or boundControls[control] then return end
     boundControls[control] = true
     control.EventHandler = function()
+      if reflectReady and control == sourceStatus then
+        if updatingMonitorStatus then return end
+        local value, text = tonumber(controlValue(control)), controlText(control)
+        -- Ignore our own status echo, including deferred events.
+        if value == lastDirectStatusValue and text == lastDirectStatusText then return end
+        nativeStatusValue, nativeStatusText = value or 0, text
+      end
       evaluateMonitoring(name)
     end
   end
@@ -593,6 +735,7 @@ local function isSelectableSourceControl(name)
   local normalizedName = string.lower(tostring(name or ""))
   return not normalizedName:match("^log%.")
     and not normalizedName:match("^script%.")
+    and not (reflectReady and normalizedName == "status")
 end
 
 local function bindSourceComponent()
@@ -601,6 +744,8 @@ local function bindSourceComponent()
   sourceControls = {}
   sourceControlNames = { "" }
   sourceStatus = nil
+  nativeStatusValue, nativeStatusText = 0, "OK"
+  lastDirectStatusValue, lastDirectStatusText = nil, nil
 
   local componentName = Controls.Component.String
   if componentName == "" then
@@ -641,6 +786,10 @@ local function bindSourceComponent()
   end
 
   if sourceStatus then
+    if reflectReady then
+      nativeStatusValue = tonumber(controlValue(sourceStatus)) or 0
+      nativeStatusText = controlText(sourceStatus)
+    end
     print(string.format(
       "[Monitor Debug] source Status found: value=%s, string=%q",
       tostring(controlValue(sourceStatus)), controlText(sourceStatus)
@@ -666,16 +815,24 @@ local function bindSourceComponent()
 end
 
 local function bindMonitorComponent()
+  if reflectReady then
+    evaluateMonitoring()
+    return
+  end
   if monitorComponent and monitorComponent["status"] then
     pcall(function() monitorComponent["status"].EventHandler = nil end)
   end
   monitorComponent = nil
   local monitorName = Controls.Monitor.String
-  if monitorName == "" then return end
+  if monitorName == "" then
+    evaluateMonitoring()
+    return
+  end
 
   local ok, component = pcall(Component.New, monitorName)
   if not ok or not component then
     logError("Unable to connect to Monitoring Proxy '" .. monitorName .. "'", component)
+    evaluateMonitoring()
     return
   end
 
@@ -696,6 +853,7 @@ local function captureBaseline()
       name = selector.String,
       value = controlText(sourceControls[selector.String]),
       logEntry = Controls.LogEntry[index].String,
+      normalLogEntry = Controls.NormalLogEntry[index].String,
       severity = Controls.Severity[index].String,
       alias = Controls.Alias[index].String
     }
@@ -711,10 +869,13 @@ local function applyLock()
     selector.IsDisabled = locked
   end
   for _, logEntry in ipairs(Controls.LogEntry) do
-    logEntry.IsDisabled = locked
+    logEntry.IsDisabled = locked or reflectReady
+  end
+  for _, logEntry in ipairs(Controls.NormalLogEntry) do
+    logEntry.IsDisabled = locked or reflectReady
   end
   for _, severity in ipairs(Controls.Severity) do
-    severity.IsDisabled = locked
+    severity.IsDisabled = locked or reflectReady
   end
   for _, alias in ipairs(Controls.Alias) do
     alias.IsDisabled = locked
@@ -731,6 +892,7 @@ local function restoreLockedSelection(control, expected)
 end
 
 evaluateMonitoring = function()
+  if reflectReady and updatingMonitorStatus then return end
   updateDisplayedValues()
 
   if not sourceComponent then
@@ -748,6 +910,10 @@ evaluateMonitoring = function()
 
     sourceStatusText = controlText(sourceStatus)
     statusValue = tonumber(statusValue) or 0
+    if reflectReady then
+      statusValue = nativeStatusValue
+      sourceStatusText = nativeStatusText
+    end
     print(string.format(
       "[Monitor Debug] source Status evaluated: value=%s, string=%q",
       tostring(statusValue), sourceStatusText
@@ -781,10 +947,13 @@ evaluateMonitoring = function()
       table.insert(changes, string.format("%s: %s -> %s", name, item.value, currentValue))
 
       if not reportedChanges[index] then
-        sendMonitorLog(Controls.LogEntry[index].String, Controls.Severity[index].String)
+        sendMonitorLog(Controls.LogEntry[index].String, compromisedSeverity(Controls.Severity[index].String))
         reportedChanges[index] = true
       end
     else
+      if reportedChanges[index] then
+        sendMonitorLog(Controls.NormalLogEntry[index].String, "normal")
+      end
       reportedChanges[index] = false
     end
   end
@@ -820,6 +989,8 @@ local function selectedControlChanged(index)
 
   local selectedName = Controls.Control[index].String
   Controls.Alias[index].String = ""
+  Controls.NormalLogEntry[index].String = selectedName ~= ""
+    and controlDisplayName(index) .. " is back to normal." or ""
   if selectedName == "" then
     Controls.LogEntry[index].String = ""
   else
@@ -836,6 +1007,8 @@ local function aliasChanged(index)
   if changingControl or Controls.Lock.Boolean then return end
 
   local selectedName = Controls.Control[index].String
+  Controls.NormalLogEntry[index].String = selectedName ~= ""
+    and controlDisplayName(index) .. " is back to normal." or ""
   if selectedName == "" then
     Controls.LogEntry[index].String = ""
     return
@@ -885,10 +1058,8 @@ end
 discoverComponents()
 
 for index = 1, #Controls.Control do
-  Controls.Severity[index].Choices = { "error", "normal", "warning" }
-  if Controls.Severity[index].String == "" then
-    Controls.Severity[index].String = "normal"
-  end
+  Controls.Severity[index].Choices = { "warning", "error" }
+  Controls.Severity[index].String = compromisedSeverity(Controls.Severity[index].String)
 end
 
 local savedState = loadState()
@@ -903,7 +1074,8 @@ if savedState then
         Controls.Control[index].String = item.name
         Controls.Alias[index].String = item.alias or ""
         Controls.LogEntry[index].String = item.logEntry or ""
-        Controls.Severity[index].String = item.severity ~= "" and item.severity or "normal"
+        Controls.NormalLogEntry[index].String = item.normalLogEntry or ""
+        Controls.Severity[index].String = compromisedSeverity(item.severity)
       end
     end
   end
@@ -919,6 +1091,9 @@ end
 bindSourceComponent()
 
 for index, selector in ipairs(Controls.Control) do
+  if selector.String ~= "" and Controls.NormalLogEntry[index].String == "" then
+    Controls.NormalLogEntry[index].String = controlDisplayName(index) .. " is back to normal."
+  end
   if selector.String ~= "" and Controls.LogEntry[index].String == "" then
     Controls.LogEntry[index].String = defaultLogEntry(
       controlDisplayName(index),

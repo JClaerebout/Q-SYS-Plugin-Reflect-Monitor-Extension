@@ -2,13 +2,13 @@
 
 ## Overview
 
-The **Reflect Monitor Extension Q-SYS Plugin** monitors selected controls on a named Q-SYS component and reports their state through a standard Q-SYS Monitoring Proxy.
+The **Reflect Monitor Extension Q-SYS Plugin** monitors selected controls on any Q-SYS component or plugin with Script Access and reports their state through a standard Q-SYS Monitoring Proxy.
 
 It captures a baseline configuration, detects later value changes, updates the Monitoring Proxy status, and creates monitoring log entries with a configurable severity. This is useful for detecting configuration changes or unexpected state changes in components that do not provide the required monitoring behavior themselves.
 
 ## Features
 
-- Discovers named components and Monitoring Proxy components in the design
+- Discovers Q-SYS components and plugins with Script Access, including Monitoring Proxy components
 - Monitors between 1 and 32 selected controls
 - Displays the current value of every selected control
 - Displays monitoring status and configuration errors in a status bar directly below the Monitoring Proxy selector
@@ -31,8 +31,8 @@ It captures a baseline configuration, detects later value changes, updates the M
 
 ## Requirements
 
-- A source component with a unique Code Name and script acces
-- A Q-SYS Monitoring Proxy with a unique Code Name and script acces
+- Any Q-SYS component or plugin with Script Access and a unique Code Name
+- A Q-SYS Monitoring Proxy with a unique Code Name and Script Access
 
 The source component does not need a `Status` control. When one is present, its status is passed through to the Monitoring Proxy and takes priority over baseline-change reporting.
 
@@ -49,7 +49,7 @@ The source component does not need a `Status` control. When one is present, its 
 
 | Control | Description |
 | --- | --- |
-| `Component/Plugin` | Selects the named component to monitor |
+| `Component/Plugin` | Select any Q-SYS component or plugin with Script Access |
 | `Monitoring Proxy` | Selects the Monitoring Proxy that receives status and log updates |
 | `Lock Configuration` | Captures the current values as the baseline and prevents configuration changes |
 | `Control` | Selects a control from the source component |
@@ -66,7 +66,7 @@ Only the repeated `Value` controls are exposed as output pins. Configuration con
 
 ### Component Discovery
 
-The plugin discovers components in the running design. Monitoring Proxy components are listed separately from other named components. After selecting a source component, each `Control` row is populated with its available controls.
+The plugin discovers Q-SYS components and plugins with Script Access in the running design. Monitoring Proxy components are listed separately from other components and plugins. After selecting a source component, each `Control` row is populated with its available controls.
 
 ### Baseline and Locking
 
@@ -107,11 +107,11 @@ The locked configuration and baseline are stored in a text file in the Core's `m
 
 ## Installation
 
-1. Place `Reflect-Monitor-Extention.qplug` in the Q-SYS plugin directory or deploy it through Q-SYS Designer.
+1. Place `Reflect-Monitor-Extension.qplug` in the Q-SYS plugin directory or deploy it through Q-SYS Designer.
 2. Add the plugin to the design.
 3. Set `Number of Controls` to the required number of monitored controls.
-4. Give the desired source component and Monitoring Proxy unique Code Names and enable script acces
-5. Select the source component and Monitoring Proxy.
+4. Give the desired source component or plugin and Monitoring Proxy unique Code Names and enable Script Access.
+5. Select any Q-SYS component or plugin with Script Access, then select the Monitoring Proxy.
 6. Select the controls to monitor and optionally configure aliases, log messages, and severities.
 7. Enable `Lock Configuration` to capture the baseline.
 8. Deploy the design to the Q-SYS Core and verify the Monitoring Proxy status.
@@ -145,7 +145,7 @@ The locked configuration and baseline are stored in a text file in the Core's `m
 
 ### 1.0.0
 
-- Initial plugin release with named-component discovery and 1-32 monitored control rows.
+- Initial plugin release with discovery of Q-SYS components and plugins with Script Access and 1-32 monitored control rows.
 - Added baseline capture and configuration locking, live value display, and highlighting of changed values.
 - Added aliases, configurable log messages and severities, and status reporting through an external Monitoring Proxy.
 - Added source-status passthrough and persistent storage of the locked configuration and baseline on the Core.

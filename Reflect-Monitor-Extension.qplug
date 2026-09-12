@@ -283,7 +283,7 @@ end
 
 if Controls then
 
--- Monitor selected controls on a named component through a Monitoring Proxy.
+-- Monitor selected controls on any Q-SYS component or plugin with Script Access through a Monitoring Proxy.
 
 -- Q-SYS exposes a Count of one as a single control, while this runtime uses
 -- arrays for its repeated rows. Wrap only the repeated controls so the full

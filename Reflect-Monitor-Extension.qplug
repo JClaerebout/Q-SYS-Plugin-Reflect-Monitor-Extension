@@ -327,6 +327,7 @@ local monitorComponent = nil
 local sourceControls = {}
 local sourceControlNames = {}
 local sourceStatus = nil
+local sourceStatusReadOnly = false
 local baseline = {}
 local reportedChanges = {}
 local lockedComponentName = ""
@@ -430,6 +431,11 @@ local function setMonitorStatus(value, message, allowMissing)
   Controls.Status.String = requestedMessage
 
   if reflectReady then
+    if sourceStatusReadOnly then
+      Controls.Status.Value = 1
+      Controls.Status.String = "Status is read-only; disable Reflect Ready and use a Monitoring Proxy"
+      return
+    end
     if not sourceStatus then
       Controls.Status.Value = 1
       Controls.Status.String = sourceComponent
@@ -744,6 +750,7 @@ local function bindSourceComponent()
   sourceControls = {}
   sourceControlNames = { "" }
   sourceStatus = nil
+  sourceStatusReadOnly = false
   nativeStatusValue, nativeStatusText = 0, "OK"
   lastDirectStatusValue, lastDirectStatusText = nil, nil
 
@@ -777,7 +784,10 @@ local function bindSourceComponent()
     local name = descriptor.Name
     local control = name and sourceComponent[name]
     if name and control then
-      if string.lower(name) == "status" then sourceStatus = control end
+      if string.lower(name) == "status" then
+        sourceStatus = control
+        sourceStatusReadOnly = tostring(descriptor.Direction):lower():gsub("[%s%-_]", "") == "readonly"
+      end
       if isSelectableSourceControl(name) then
         table.insert(sourceControlNames, name)
         sourceControls[name] = control
@@ -786,6 +796,11 @@ local function bindSourceComponent()
   end
 
   if sourceStatus then
+    if sourceStatusReadOnly then
+      print("[Monitor Debug] source Status is read-only; " .. (reflectReady
+        and "disable Reflect Ready and use a Monitoring Proxy"
+        or "source status passthrough is available through the Monitoring Proxy"))
+    end
     if reflectReady then
       nativeStatusValue = tonumber(controlValue(sourceStatus)) or 0
       nativeStatusText = controlText(sourceStatus)

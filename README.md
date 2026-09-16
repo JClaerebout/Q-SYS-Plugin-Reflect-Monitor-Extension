@@ -43,7 +43,7 @@ The source component does not need a `Status` control. When one is present, its 
 | Property | Description |
 | --- | --- |
 | `Number of Controls` | Number of control rows to monitor (1-32) |
-| `Reflect Ready` | Boolean, default `false`. Enable to write status directly to the selected component thas is Reflect Ready and does not need the Monitoring Proxy selector. |
+| `Reflect Ready` | Boolean, default `false`. Enable to write status directly to the selected component's writable `Status` control without a Monitoring Proxy. |
 
 ### Plugin Controls
 
@@ -95,6 +95,8 @@ If the selected source component has a control named `Status`, its numeric statu
 
 With `Reflect Ready` disabled, the existing layout and external Monitoring Proxy behavior are retained. With it enabled, the status bar moves directly below the component selector and no external proxy is used. The selected component must expose a writable `Status` control (matched without regard to case). Missing or unwritable status controls are reported in the status bar.
 
+If the selected component's `Status` control is read-only, the status bar immediately displays "Status is read-only; disable Reflect Ready and use a Monitoring Proxy" and the extension does not attempt to write to it. The same reason is recorded in debug output. Disable the `Reflect Ready` property and select a Monitoring Proxy to monitor this component. A read-only source `Status` control still supports status passthrough in Monitoring Proxy mode.
+
 Baseline changes update the component's own status. The extension ignores its own status events so its change warning can clear when values return to baseline. Independently reported component faults retain priority. The status control is excluded from selectable baseline controls in this mode to avoid monitoring the extension's own output.
 
 Log entries are only supported through a Monitoring Proxy. Reflect Ready mode does not send log entries, and the compromised log entry, back-to-normal log entry, and severity fields are hidden. Status reporting and baseline-change detection remain active.
@@ -132,6 +134,7 @@ The locked configuration and baseline are stored in a text file in the Core's `m
 
 ### 1.1.0
 
+- Detect read-only source status controls on selection and display a persistent explanation with corrective action in the Reflect Ready status bar, as well as debug output.
 - Made the UI approximately 20% smaller with compact fields, status bars, spacing, and text in both monitoring modes.
 - Added separate compromised and back-to-normal log messages per control, with one recovery log entry when a changed value returns to baseline.
 - Limited selectable compromised severity to `warning` and `error`; recovery entries use `normal` severity.

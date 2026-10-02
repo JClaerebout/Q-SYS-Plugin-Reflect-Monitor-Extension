@@ -1,6 +1,7 @@
+BuildVersion = "1.1.0.0"
 PluginInfo = {
-  Name = "Monitoring~Reflect Monitor Extension",
-  Version = "1.1.0",
+  Name = "Monitoring~Reflect Monitor Extension v" .. BuildVersion, -- preferred format is "manufacturer~plugin name version"
+  Version = BuildVersion,
   Id = "25e1094b-2862-474e-bad6-5e91bbbfc49a",
   Description = [[Monitor selected controls through a Q-SYS Monitoring Proxy or directly on a Reflect Ready component.]],
   Author = "Jens Claerebout",

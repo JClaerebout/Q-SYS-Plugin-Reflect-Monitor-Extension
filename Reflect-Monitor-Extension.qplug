@@ -8,15 +8,15 @@ PluginInfo = {
   ShowDebug = true
 }
 
-local function controlCount(props)
+function controlCount(props)
   return math.max(1, math.min(32, math.floor(tonumber(props["Number of Controls"].Value) or 1)))
 end
 
-local function isReflectReady(props)
+function isReflectReady(props)
   return props["Reflect Ready"] ~= nil and props["Reflect Ready"].Value == true
 end
 
-local function compromisedSeverity(value)
+function compromisedSeverity(value)
   return value == "error" and "error" or "warning"
 end
 
@@ -51,7 +51,7 @@ function GetColor(props)
 end
 
 function GetControls(props)
-  local count = controlCount(props)
+  GetControls_count = controlCount(props)
   return {
     {
       Name = "Status",
@@ -83,39 +83,39 @@ function GetControls(props)
     {
       Name = "Control",
       ControlType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = false
     },
     {
       Name = "Alias",
       ControlType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = false
     },
     {
       Name = "Value",
       ControlType = "Indicator",
       IndicatorType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = true,
       PinStyle = "Output"
     },
     {
       Name = "LogEntry",
       ControlType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = false
     },
     {
       Name = "NormalLogEntry",
       ControlType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = false
     },
     {
       Name = "Severity",
       ControlType = "Text",
-      Count = count,
+      Count = GetControls_count,
       UserPin = false
     }
   }
@@ -126,23 +126,23 @@ function GetPages(props)
 end
 
 function GetControlLayout(props)
-  local layout = {}
-  local graphics = {}
-  local count = controlCount(props)
-  local rowHeight = 29
-  local rowGap = 5
-  local reflectReady = isReflectReady(props)
-  local firstRowY = reflectReady and 151 or 192
-  local statusY = reflectReady and 68 or 109
-  local headerY = firstRowY - 38
-  local panelHeight = firstRowY + count * (rowHeight + rowGap) + 18
+  GetControlLayout_layout = {}
+  GetControlLayout_graphics = {}
+  GetControlLayout_count = controlCount(props)
+  GetControlLayout_rowHeight = 29
+  GetControlLayout_rowGap = 5
+  GetControlLayout_reflectReady = isReflectReady(props)
+  GetControlLayout_firstRowY = GetControlLayout_reflectReady and 151 or 192
+  GetControlLayout_statusY = GetControlLayout_reflectReady and 68 or 109
+  GetControlLayout_headerY = GetControlLayout_firstRowY - 38
+  GetControlLayout_panelHeight = GetControlLayout_firstRowY + GetControlLayout_count * (GetControlLayout_rowHeight + GetControlLayout_rowGap) + 18
 
-  local function arrayName(name, index)
-    return count == 1 and name or name .. " " .. index
+  function arrayName(name, index)
+    return GetControlLayout_count == 1 and name or name .. " " .. index
   end
 
-  local function addLabel(text, x, y, width, height, align, size)
-    table.insert(graphics, {
+  function addLabel(text, x, y, width, height, align, size)
+    table.insert(GetControlLayout_graphics, {
       Type = "Label",
       Text = text,
       Position = { x, y },
@@ -153,29 +153,29 @@ function GetControlLayout(props)
     })
   end
 
-  table.insert(graphics, {
+  table.insert(GetControlLayout_graphics, {
     Type = "GroupBox",
     Position = { 10, 10 },
-    Size = { reflectReady and 940 or 1240, panelHeight - 10 },
+    Size = { GetControlLayout_reflectReady and 940 or 1240, GetControlLayout_panelHeight - 10 },
     StrokeWidth = 1,
     CornerRadius = 8
   })
 
   addLabel("Component/Plugin", 35, 27, 145, 31, "Left", 15)
-  if not reflectReady then
+  if not GetControlLayout_reflectReady then
     addLabel("Monitoring Proxy", 35, 68, 145, 31, "Left", 15)
   end
-  addLabel("Status", 35, statusY, 145, 31, "Left", 15)
+  addLabel("Status", 35, GetControlLayout_statusY, 145, 31, "Left", 15)
 
-  layout.Status = {
+  GetControlLayout_layout.Status = {
     PrettyName = "Status",
-    Position = { 180, statusY },
+    Position = { 180, GetControlLayout_statusY },
     Size = { 650, 31 },
     Style = "Text",
     TextFontSize = 14
   }
 
-  layout.Component = {
+  GetControlLayout_layout.Component = {
     PrettyName = "Component/Plugin",
     Position = { 180, 27 },
     Size = { 650, 31 },
@@ -183,8 +183,8 @@ function GetControlLayout(props)
     TextFontSize = 14
   }
 
-  if not reflectReady then
-    layout.Monitor = {
+  if not GetControlLayout_reflectReady then
+    GetControlLayout_layout.Monitor = {
       PrettyName = "Monitoring Proxy",
       Position = { 180, 68 },
       Size = { 650, 31 },
@@ -193,7 +193,7 @@ function GetControlLayout(props)
     }
   end
 
-  layout.Lock = {
+  GetControlLayout_layout.Lock = {
     PrettyName = "Lock Configuration",
     Position = { 855, 28 },
     Size = { 70, 70 },
@@ -201,59 +201,59 @@ function GetControlLayout(props)
     TextFontSize = 12
   }
 
-  addLabel("Control", 40, headerY, 185, 28, "Center", 15)
-  addLabel("Alias", 225, headerY, 180, 28, "Center", 15)
-  addLabel("Value", 405, headerY, 125, 28, "Center", 15)
-  if not reflectReady then
-    addLabel("Compromised Log Entry", 530, headerY, 300, 28, "Center", 15)
-    addLabel("Back to Normal Log Entry", 830, headerY, 300, 28, "Center", 15)
-    addLabel("Severity", 1130, headerY, 105, 28, "Center", 15)
+  addLabel("Control", 40, GetControlLayout_headerY, 185, 28, "Center", 15)
+  addLabel("Alias", 225, GetControlLayout_headerY, 180, 28, "Center", 15)
+  addLabel("Value", 405, GetControlLayout_headerY, 125, 28, "Center", 15)
+  if not GetControlLayout_reflectReady then
+    addLabel("Compromised Log Entry", 530, GetControlLayout_headerY, 300, 28, "Center", 15)
+    addLabel("Back to Normal Log Entry", 830, GetControlLayout_headerY, 300, 28, "Center", 15)
+    addLabel("Severity", 1130, GetControlLayout_headerY, 105, 28, "Center", 15)
   end
 
-  for index = 1, count do
-    local y = firstRowY + (index - 1) * (rowHeight + rowGap)
-    local suffix = "~" .. tostring(index)
+  for index = 1, GetControlLayout_count do
+    GetControlLayout_y = GetControlLayout_firstRowY + (index - 1) * (GetControlLayout_rowHeight + GetControlLayout_rowGap)
+    GetControlLayout_suffix = "~" .. tostring(index)
 
-    layout[arrayName("Control", index)] = {
-      PrettyName = "Control" .. suffix,
-      Position = { 40, y },
-      Size = { 185, rowHeight },
+    GetControlLayout_layout[arrayName("Control", index)] = {
+      PrettyName = "Control" .. GetControlLayout_suffix,
+      Position = { 40, GetControlLayout_y },
+      Size = { 185, GetControlLayout_rowHeight },
       Style = "ComboBox",
       TextFontSize = 12
     }
-    layout[arrayName("Alias", index)] = {
-      PrettyName = "Alias" .. suffix,
-      Position = { 225, y },
-      Size = { 180, rowHeight },
+    GetControlLayout_layout[arrayName("Alias", index)] = {
+      PrettyName = "Alias" .. GetControlLayout_suffix,
+      Position = { 225, GetControlLayout_y },
+      Size = { 180, GetControlLayout_rowHeight },
       Style = "Text",
       TextFontSize = 12
     }
-    layout[arrayName("Value", index)] = {
-      PrettyName = "Value" .. suffix,
-      Position = { 405, y },
-      Size = { 125, rowHeight },
+    GetControlLayout_layout[arrayName("Value", index)] = {
+      PrettyName = "Value" .. GetControlLayout_suffix,
+      Position = { 405, GetControlLayout_y },
+      Size = { 125, GetControlLayout_rowHeight },
       Style = "Text",
       TextFontSize = 12
     }
-    if not reflectReady then
-      layout[arrayName("LogEntry", index)] = {
-        PrettyName = "Compromised Log Entry" .. suffix,
-        Position = { 530, y },
-        Size = { 300, rowHeight },
+    if not GetControlLayout_reflectReady then
+      GetControlLayout_layout[arrayName("LogEntry", index)] = {
+        PrettyName = "Compromised Log Entry" .. GetControlLayout_suffix,
+        Position = { 530, GetControlLayout_y },
+        Size = { 300, GetControlLayout_rowHeight },
         Style = "Text",
         TextFontSize = 12
       }
-      layout[arrayName("NormalLogEntry", index)] = {
-        PrettyName = "Back to Normal Log Entry" .. suffix,
-        Position = { 830, y },
-        Size = { 300, rowHeight },
+      GetControlLayout_layout[arrayName("NormalLogEntry", index)] = {
+        PrettyName = "Back to Normal Log Entry" .. GetControlLayout_suffix,
+        Position = { 830, GetControlLayout_y },
+        Size = { 300, GetControlLayout_rowHeight },
         Style = "Text",
         TextFontSize = 12
       }
-      layout[arrayName("Severity", index)] = {
-        PrettyName = "Severity" .. suffix,
-        Position = { 1130, y },
-        Size = { 105, rowHeight },
+      GetControlLayout_layout[arrayName("Severity", index)] = {
+        PrettyName = "Severity" .. GetControlLayout_suffix,
+        Position = { 1130, GetControlLayout_y },
+        Size = { 105, GetControlLayout_rowHeight },
         Style = "ComboBox",
         TextFontSize = 12
       }
@@ -261,7 +261,7 @@ function GetControlLayout(props)
   end
 
   -- Keep both layouts and all row counts at the same compact scale.
-  local function compact(item)
+  function compact(item)
     for _, key in ipairs({ "Position", "Size" }) do
       if item[key] then
         for axis = 1, 2 do
@@ -276,10 +276,10 @@ function GetControlLayout(props)
     end
   end
 
-  for _, item in pairs(layout) do compact(item) end
-  for _, item in ipairs(graphics) do compact(item) end
+  for _, item in pairs(GetControlLayout_layout) do compact(item) end
+  for _, item in ipairs(GetControlLayout_graphics) do compact(item) end
 
-  return layout, graphics
+  return GetControlLayout_layout, GetControlLayout_graphics
 end
 
 if Controls then
@@ -289,8 +289,8 @@ if Controls then
 -- Q-SYS exposes a Count of one as a single control, while this runtime uses
 -- arrays for its repeated rows. Wrap only the repeated controls so the full
 -- 1-32 property range behaves consistently.
-local qsysControls = Controls
-local repeatedControlNames = {
+qsysControls = Controls
+repeatedControlNames = {
   Control = true,
   Alias = true,
   Value = true,
@@ -298,92 +298,92 @@ local repeatedControlNames = {
   NormalLogEntry = true,
   Severity = true
 }
-local configuredControlCount = math.max(
+configuredControlCount = math.max(
   1,
   math.floor(tonumber(Properties["Number of Controls"].Value) or 6)
 )
-local Controls = setmetatable({}, {
+runtimeControls = setmetatable({}, {
   __index = function(_, name)
-    local control = qsysControls[name]
+    callback_control = qsysControls[name]
     if configuredControlCount == 1 and repeatedControlNames[name] then
-      return { control }
+      return { callback_control }
     end
-    return control
+    return callback_control
   end
 })
 
-local STATE_FILE_PREFIX = "media/Mon Proxy Extension State - "
-local reflectReady = isReflectReady(Properties)
-local nativeStatusValue = 0
-local nativeStatusText = "OK"
-local lastDirectStatusValue = nil
-local lastDirectStatusText = nil
-local COLOR_OK = "#00A651"
-local COLOR_CHANGED = "#F5A000"
-local COLOR_LOCKED = "#D32F2F"
-local COLOR_UNLOCKED = "#00A651"
+STATE_FILE_PREFIX = "media/Mon Proxy Extension State - "
+reflectReady = isReflectReady(Properties)
+nativeStatusValue = 0
+nativeStatusText = "OK"
+lastDirectStatusValue = nil
+lastDirectStatusText = nil
+COLOR_OK = "#00A651"
+COLOR_CHANGED = "#F5A000"
+COLOR_LOCKED = "#D32F2F"
+COLOR_UNLOCKED = "#00A651"
 
-local sourceComponent = nil
-local monitorComponent = nil
-local sourceControls = {}
-local sourceControlNames = {}
-local sourceStatus = nil
-local sourceStatusReadOnly = false
-local baseline = {}
-local reportedChanges = {}
-local lockedComponentName = ""
-local lockedMonitorName = ""
-local changingControl = false
-local updatingMonitorStatus = false
-local desiredMonitorStatusValue = 0
-local desiredMonitorStatusMessage = "OK"
-local missingCorrectionCount = 0
+sourceComponent = nil
+monitorComponent = nil
+sourceControls = {}
+sourceControlNames = {}
+sourceStatus = nil
+sourceStatusReadOnly = false
+baseline = {}
+reportedChanges = {}
+lockedComponentName = ""
+lockedMonitorName = ""
+changingControl = false
+updatingMonitorStatus = false
+desiredMonitorStatusValue = 0
+desiredMonitorStatusMessage = "OK"
+missingCorrectionCount = 0
 
-local evaluateMonitoring
+evaluateMonitoring = nil
 
-local function stateFilePath()
+function stateFilePath()
   -- A Monitoring Proxy Code Name is unique within a design, making it a
   -- stable namespace for the extension instance that owns that proxy.
-  local monitorName = lockedMonitorName
-  if monitorName == "" and Controls.Monitor then
-    monitorName = Controls.Monitor.String
+  stateFilePath_monitorName = lockedMonitorName
+  if stateFilePath_monitorName == "" and runtimeControls.Monitor then
+    stateFilePath_monitorName = runtimeControls.Monitor.String
   end
   if reflectReady then
-    monitorName = lockedComponentName ~= "" and lockedComponentName or Controls.Component.String
-    if monitorName == "" then return nil end
-    monitorName = "Reflect Ready - " .. monitorName
+    stateFilePath_monitorName = lockedComponentName ~= "" and lockedComponentName or runtimeControls.Component.String
+    if stateFilePath_monitorName == "" then return nil end
+    stateFilePath_monitorName = "Reflect Ready - " .. stateFilePath_monitorName
   end
-  if monitorName == "" then return nil end
+  if stateFilePath_monitorName == "" then return nil end
 
-  local hash = 0
-  for index = 1, #monitorName do
-    hash = (hash * 31 + monitorName:byte(index)) % 4294967296
+  stateFilePath_hash = 0
+  for index = 1, #stateFilePath_monitorName do
+    stateFilePath_hash = (stateFilePath_hash * 31 + stateFilePath_monitorName:byte(index)) % 4294967296
   end
 
-  local safeName = monitorName
+  stateFilePath_safeName = stateFilePath_monitorName
     :gsub("[^%w%-%._ ]", "_")
     :gsub("^%s+", "")
     :gsub("%s+$", "")
     :sub(1, 48)
-  if safeName == "" then safeName = "Monitor" end
+  if stateFilePath_safeName == "" then stateFilePath_safeName = "Monitor" end
 
-  return string.format("%s%s-%08x.txt", STATE_FILE_PREFIX, safeName, hash)
+  return string.format("%s%s-%08x.txt", STATE_FILE_PREFIX, stateFilePath_safeName, stateFilePath_hash)
 end
 
-local function logError(context, err)
+function logError(context, err)
   print(string.format("%s: %s", context, tostring(err)))
 end
 
-local function escapeField(value)
-  local text = tostring(value or "")
-  text = text:gsub("\\", "\\\\")
-  text = text:gsub("\t", "\\t")
-  text = text:gsub("\r", "\\r")
-  text = text:gsub("\n", "\\n")
-  return text
+function escapeField(value)
+  escapeField_text = tostring(value or "")
+  escapeField_text = escapeField_text:gsub("\\", "\\\\")
+  escapeField_text = escapeField_text:gsub("\t", "\\t")
+  escapeField_text = escapeField_text:gsub("\r", "\\r")
+  escapeField_text = escapeField_text:gsub("\n", "\\n")
+  return escapeField_text
 end
 
-local function unescapeField(value)
+function unescapeField(value)
   return (tostring(value or ""):gsub("\\(.)", function(character)
     if character == "t" then return "\t" end
     if character == "r" then return "\r" end
@@ -392,157 +392,157 @@ local function unescapeField(value)
   end))
 end
 
-local function controlText(control)
+function controlText(control)
   if not control then return "" end
 
-  local ok, value = pcall(function() return control.String end)
-  if ok and value ~= nil then return tostring(value) end
+  controlText_ok, controlText_value = pcall(function() return control.String end)
+  if controlText_ok and controlText_value ~= nil then return tostring(controlText_value) end
 
-  ok, value = pcall(function() return control.Value end)
-  if ok and value ~= nil then return tostring(value) end
+  controlText_ok, controlText_value = pcall(function() return control.Value end)
+  if controlText_ok and controlText_value ~= nil then return tostring(controlText_value) end
 
   return ""
 end
 
-local function controlValue(control)
+function controlValue(control)
   if not control then return nil end
-  local ok, value = pcall(function() return control.Value end)
-  if ok then return value end
+  controlValue_ok, controlValue_value = pcall(function() return control.Value end)
+  if controlValue_ok then return controlValue_value end
   return nil
 end
 
 
-local function setValueColor(control, color)
+function setValueColor(control, color)
   pcall(function() control.Color = color end)
 end
 
-local function setMonitorStatus(value, message, allowMissing)
-  local requestedValue = tonumber(value) or 0
+function setMonitorStatus(value, message, allowMissing)
+  setMonitorStatus_requestedValue = tonumber(value) or 0
   print(string.format(
     "[Monitor Debug] status request: value=%s, message=%q, allowMissing=%s",
-    tostring(requestedValue), tostring(message or ""), tostring(allowMissing == true)
+    tostring(setMonitorStatus_requestedValue), tostring(message or ""), tostring(allowMissing == true)
   ))
-  if requestedValue == 4 and not allowMissing then
+  if setMonitorStatus_requestedValue == 4 and not allowMissing then
     print("Blocked unexpected Monitoring Proxy Missing status")
-    requestedValue = 1
+    setMonitorStatus_requestedValue = 1
   end
 
-  local requestedMessage = tostring(message or "")
-  Controls.Status.Value = requestedValue
-  Controls.Status.String = requestedMessage
+  setMonitorStatus_requestedMessage = tostring(message or "")
+  runtimeControls.Status.Value = setMonitorStatus_requestedValue
+  runtimeControls.Status.String = setMonitorStatus_requestedMessage
 
   if reflectReady then
     if sourceStatusReadOnly then
-      Controls.Status.Value = 1
-      Controls.Status.String = "Status is read-only; disable Reflect Ready and use a Monitoring Proxy"
+      runtimeControls.Status.Value = 1
+      runtimeControls.Status.String = "Status is read-only; disable Reflect Ready and use a Monitoring Proxy"
       return
     end
     if not sourceStatus then
-      Controls.Status.Value = 1
-      Controls.Status.String = sourceComponent
+      runtimeControls.Status.Value = 1
+      runtimeControls.Status.String = sourceComponent
         and "Selected component has no Status control" or "Selected component is unavailable"
       return
     end
-    if tonumber(controlValue(sourceStatus)) == requestedValue
-      and controlText(sourceStatus) == requestedMessage then return end
-    lastDirectStatusValue = requestedValue
-    lastDirectStatusText = requestedMessage
+    if tonumber(controlValue(sourceStatus)) == setMonitorStatus_requestedValue
+      and controlText(sourceStatus) == setMonitorStatus_requestedMessage then return end
+    lastDirectStatusValue = setMonitorStatus_requestedValue
+    lastDirectStatusText = setMonitorStatus_requestedMessage
     updatingMonitorStatus = true
-    local ok, err = pcall(function()
-      sourceStatus.Value = requestedValue
-      sourceStatus.String = requestedMessage
+    setMonitorStatus_ok, setMonitorStatus_err = pcall(function()
+      sourceStatus.Value = setMonitorStatus_requestedValue
+      sourceStatus.String = setMonitorStatus_requestedMessage
     end)
     updatingMonitorStatus = false
-    if not ok then
+    if not setMonitorStatus_ok then
       lastDirectStatusValue = nil
       lastDirectStatusText = nil
-      Controls.Status.Value = 1
-      Controls.Status.String = "Unable to update selected component status"
-      logError(Controls.Status.String, err)
+      runtimeControls.Status.Value = 1
+      runtimeControls.Status.String = "Unable to update selected component status"
+      logError(runtimeControls.Status.String, setMonitorStatus_err)
     end
     return
   end
 
   if not monitorComponent then
-    Controls.Status.Value = 1
-    Controls.Status.String = Controls.Monitor.String == ""
+    runtimeControls.Status.Value = 1
+    runtimeControls.Status.String = runtimeControls.Monitor.String == ""
       and "Select a Monitoring Proxy" or "Selected Monitoring Proxy is unavailable"
     return
   end
 
-  local targetStatus = monitorComponent["status"]
-  if not targetStatus then
-    Controls.Status.Value = 1
-    Controls.Status.String = "Selected Monitoring Proxy has no 'status' control"
-    print(Controls.Status.String)
+  setMonitorStatus_targetStatus = monitorComponent["status"]
+  if not setMonitorStatus_targetStatus then
+    runtimeControls.Status.Value = 1
+    runtimeControls.Status.String = "Selected Monitoring Proxy has no 'status' control"
+    print(runtimeControls.Status.String)
     return
   end
 
-  desiredMonitorStatusValue = requestedValue
-  desiredMonitorStatusMessage = requestedMessage
-  local currentValue = tonumber(controlValue(targetStatus))
-  local currentText = controlText(targetStatus)
-  local messageMatches = requestedMessage == ""
-    or currentText == requestedMessage
-    or currentText:sub(-#requestedMessage) == requestedMessage
+  desiredMonitorStatusValue = setMonitorStatus_requestedValue
+  desiredMonitorStatusMessage = setMonitorStatus_requestedMessage
+  setMonitorStatus_currentValue = tonumber(controlValue(setMonitorStatus_targetStatus))
+  setMonitorStatus_currentText = controlText(setMonitorStatus_targetStatus)
+  setMonitorStatus_messageMatches = setMonitorStatus_requestedMessage == ""
+    or setMonitorStatus_currentText == setMonitorStatus_requestedMessage
+    or setMonitorStatus_currentText:sub(-#setMonitorStatus_requestedMessage) == setMonitorStatus_requestedMessage
 
-  if currentValue == requestedValue and messageMatches then
+  if setMonitorStatus_currentValue == setMonitorStatus_requestedValue and setMonitorStatus_messageMatches then
     print("[Monitor Debug] target already matches request; skipping write")
     return
   end
 
   updatingMonitorStatus = true
-  local ok, err = pcall(function()
+  setMonitorStatus_ok2, setMonitorStatus_err2 = pcall(function()
     print(string.format(
       "[Monitor Debug] target before write: value=%s, string=%q",
-      tostring(targetStatus.Value), controlText(targetStatus)
+      tostring(setMonitorStatus_targetStatus.Value), controlText(setMonitorStatus_targetStatus)
     ))
 
-    targetStatus.Value = requestedValue
+    setMonitorStatus_targetStatus.Value = setMonitorStatus_requestedValue
     print(string.format(
       "[Monitor Debug] target after Value: value=%s, string=%q",
-      tostring(targetStatus.Value), controlText(targetStatus)
+      tostring(setMonitorStatus_targetStatus.Value), controlText(setMonitorStatus_targetStatus)
     ))
 
-    targetStatus.String = requestedMessage
+    setMonitorStatus_targetStatus.String = setMonitorStatus_requestedMessage
     print(string.format(
       "[Monitor Debug] target after String: value=%s, string=%q",
-      tostring(targetStatus.Value), controlText(targetStatus)
+      tostring(setMonitorStatus_targetStatus.Value), controlText(setMonitorStatus_targetStatus)
     ))
 
     -- Some Monitoring Proxy versions can reinterpret a reason update. Never
     -- leave it at Missing unless that state came from the source Status control.
-    if requestedValue ~= 4 and tonumber(targetStatus.Value) == 4 then
+    if setMonitorStatus_requestedValue ~= 4 and tonumber(setMonitorStatus_targetStatus.Value) == 4 then
       print("Monitoring Proxy changed to Missing while setting status; restoring requested state")
-      targetStatus.Value = requestedValue
+      setMonitorStatus_targetStatus.Value = setMonitorStatus_requestedValue
       print(string.format(
         "[Monitor Debug] target after restore: value=%s, string=%q",
-        tostring(targetStatus.Value), controlText(targetStatus)
+        tostring(setMonitorStatus_targetStatus.Value), controlText(setMonitorStatus_targetStatus)
       ))
     end
   end)
   updatingMonitorStatus = false
-  if not ok then
-    Controls.Status.Value = 1
-    Controls.Status.String = "Unable to update Monitoring Proxy status"
-    logError("Unable to update Monitoring Proxy status", err)
+  if not setMonitorStatus_ok2 then
+    runtimeControls.Status.Value = 1
+    runtimeControls.Status.String = "Unable to update Monitoring Proxy status"
+    logError("Unable to update Monitoring Proxy status", setMonitorStatus_err2)
   end
 end
 
-local function monitorStatusChanged(control)
-  local actualValue = tonumber(controlValue(control))
-  local actualText = controlText(control)
-  local sourceValue = tonumber(controlValue(sourceStatus))
+function monitorStatusChanged(control)
+  monitorStatusChanged_actualValue = tonumber(controlValue(control))
+  monitorStatusChanged_actualText = controlText(control)
+  monitorStatusChanged_sourceValue = tonumber(controlValue(sourceStatus))
 
   print(string.format(
     "[Monitor Debug] proxy status event: value=%s, string=%q, duringWrite=%s, sourceStatus=%s",
-    tostring(actualValue), actualText, tostring(updatingMonitorStatus), tostring(sourceValue)
+    tostring(monitorStatusChanged_actualValue), monitorStatusChanged_actualText, tostring(updatingMonitorStatus), tostring(monitorStatusChanged_sourceValue)
   ))
 
   if updatingMonitorStatus then return end
 
-  local sourceReportsMissing = sourceStatus ~= nil and sourceValue == 4
-  if actualValue == 4 and not sourceReportsMissing and desiredMonitorStatusValue ~= 4 then
+  monitorStatusChanged_sourceReportsMissing = sourceStatus ~= nil and monitorStatusChanged_sourceValue == 4
+  if monitorStatusChanged_actualValue == 4 and not monitorStatusChanged_sourceReportsMissing and desiredMonitorStatusValue ~= 4 then
     if missingCorrectionCount >= 3 then
       print("[Monitor Debug] repeated asynchronous Missing states; automatic correction paused")
       return
@@ -558,194 +558,194 @@ local function monitorStatusChanged(control)
   end
 end
 
-local function sendMonitorLog(message, severity)
+function sendMonitorLog(message, severity)
   if reflectReady then return end
-  local target = monitorComponent
-  if not target then return end
+  sendMonitorLog_target = monitorComponent
+  if not sendMonitorLog_target then return end
 
-  local targetLogEntry = target["log.entry"]
-  local targetSeverity = target["severity"]
-  local targetTrigger = target["trigger"]
-  if not targetLogEntry or not targetSeverity or not targetTrigger then
+  sendMonitorLog_targetLogEntry = sendMonitorLog_target["log.entry"]
+  sendMonitorLog_targetSeverity = sendMonitorLog_target["severity"]
+  sendMonitorLog_targetTrigger = sendMonitorLog_target["trigger"]
+  if not sendMonitorLog_targetLogEntry or not sendMonitorLog_targetSeverity or not sendMonitorLog_targetTrigger then
     print("Monitoring target requires 'log.entry', 'severity', and 'trigger' controls for log entries")
     return
   end
 
-  local ok, err = pcall(function()
-    targetLogEntry.String = message or ""
-    targetSeverity.String = string.lower(severity or "normal")
-    targetTrigger:Trigger()
+  sendMonitorLog_ok, sendMonitorLog_err = pcall(function()
+    sendMonitorLog_targetLogEntry.String = message or ""
+    sendMonitorLog_targetSeverity.String = string.lower(severity or "normal")
+    sendMonitorLog_targetTrigger:Trigger()
   end)
-  if not ok then logError("Unable to send Monitoring Proxy log entry", err) end
+  if not sendMonitorLog_ok then logError("Unable to send Monitoring Proxy log entry", sendMonitorLog_err) end
 end
 
-local function defaultLogEntry(name, control)
+function defaultLogEntry(name, control)
   if not name or name == "" then return "" end
 
-  local value = controlText(control)
-  if value == "" then return name .. " changed." end
+  defaultLogEntry_value = controlText(control)
+  if defaultLogEntry_value == "" then return name .. " changed." end
 
-  return name .. " is no longer " .. value .. "."
+  return name .. " is no longer " .. defaultLogEntry_value .. "."
 end
 
-local function controlDisplayName(index)
-  local alias = Controls.Alias[index].String
-  if alias ~= "" then return alias end
+function controlDisplayName(index)
+  controlDisplayName_alias = runtimeControls.Alias[index].String
+  if controlDisplayName_alias ~= "" then return controlDisplayName_alias end
 
-  local name = Controls.Control[index].String
-  if name ~= "" then return name end
+  controlDisplayName_name = runtimeControls.Control[index].String
+  if controlDisplayName_name ~= "" then return controlDisplayName_name end
 
   return "Control " .. tostring(index)
 end
 
-local function saveState(locked)
-  local path = stateFilePath()
-  if not path then
+function saveState(locked)
+  saveState_path = stateFilePath()
+  if not saveState_path then
     logError("Unable to save monitor state", reflectReady and "no component is selected" or "no Monitoring Proxy is selected")
     return false
   end
 
-  local file, err = io.open(path, "w")
-  if not file then
-    logError("Unable to save monitor state", err)
+  saveState_file, saveState_err = io.open(saveState_path, "w")
+  if not saveState_file then
+    logError("Unable to save monitor state", saveState_err)
     return false
   end
 
-  file:write("version\t4\n")
-  file:write("locked\t", locked and "1" or "0", "\n")
-  file:write("component\t", escapeField(lockedComponentName), "\n")
-  file:write("monitor\t", escapeField(lockedMonitorName), "\n")
+  saveState_file:write("version\t4\n")
+  saveState_file:write("locked\t", locked and "1" or "0", "\n")
+  saveState_file:write("component\t", escapeField(lockedComponentName), "\n")
+  saveState_file:write("monitor\t", escapeField(lockedMonitorName), "\n")
 
-  for index = 1, #Controls.Control do
-    local item = baseline[index] or {}
-    file:write(
+  for index = 1, #runtimeControls.Control do
+    saveState_item = baseline[index] or {}
+    saveState_file:write(
       "slot\t", tostring(index), "\t",
-      escapeField(item.name), "\t",
-      escapeField(item.value), "\t",
-      escapeField(item.logEntry), "\t",
-      escapeField(compromisedSeverity(item.severity)), "\t",
-      escapeField(item.alias), "\t",
-      escapeField(item.normalLogEntry), "\n"
+      escapeField(saveState_item.name), "\t",
+      escapeField(saveState_item.value), "\t",
+      escapeField(saveState_item.logEntry), "\t",
+      escapeField(compromisedSeverity(saveState_item.severity)), "\t",
+      escapeField(saveState_item.alias), "\t",
+      escapeField(saveState_item.normalLogEntry), "\n"
     )
   end
 
-  file:close()
+  saveState_file:close()
   return true
 end
 
-local function loadState()
-  local path = stateFilePath()
-  if not path then return nil end
+function loadState()
+  loadState_path = stateFilePath()
+  if not loadState_path then return nil end
 
-  local file = io.open(path, "r")
-  if not file then return nil end
+  loadState_file = io.open(loadState_path, "r")
+  if not loadState_file then return nil end
 
-  local state = { locked = false, component = "", monitor = "", slots = {} }
+  loadState_state = { locked = false, component = "", monitor = "", slots = {} }
 
-  for line in file:lines() do
-    local key, rest = line:match("^([^\t]+)\t(.*)$")
-    if key == "locked" then
-      state.locked = rest == "1"
-    elseif key == "component" then
-      state.component = unescapeField(rest)
-    elseif key == "monitor" then
-      state.monitor = unescapeField(rest)
-    elseif key == "slot" then
-      local index, name, value, logEntry, severity, alias, normalLogEntry =
-        rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
-      if not index then
-        index, name, value, logEntry, severity, alias =
-          rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+  for line in loadState_file:lines() do
+    loadState_key, loadState_rest = line:match("^([^\t]+)\t(.*)$")
+    if loadState_key == "locked" then
+      loadState_state.locked = loadState_rest == "1"
+    elseif loadState_key == "component" then
+      loadState_state.component = unescapeField(loadState_rest)
+    elseif loadState_key == "monitor" then
+      loadState_state.monitor = unescapeField(loadState_rest)
+    elseif loadState_key == "slot" then
+      loadState_index, loadState_name, loadState_value, loadState_logEntry, loadState_severity, loadState_alias, loadState_normalLogEntry =
+        loadState_rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+      if not loadState_index then
+        loadState_index, loadState_name, loadState_value, loadState_logEntry, loadState_severity, loadState_alias =
+          loadState_rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
       end
-      if not index then
-        index, name, value, logEntry, severity =
-          rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
+      if not loadState_index then
+        loadState_index, loadState_name, loadState_value, loadState_logEntry, loadState_severity =
+          loadState_rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
       end
-      if not index then
-        index, name, value = rest:match("^(%d+)\t([^\t]*)\t(.*)$")
+      if not loadState_index then
+        loadState_index, loadState_name, loadState_value = loadState_rest:match("^(%d+)\t([^\t]*)\t(.*)$")
       end
-      index = tonumber(index)
-      if index then
-        state.slots[index] = {
-          name = unescapeField(name),
-          value = unescapeField(value),
-          logEntry = unescapeField(logEntry),
-          severity = compromisedSeverity(unescapeField(severity)),
-          normalLogEntry = unescapeField(normalLogEntry),
-          alias = unescapeField(alias)
+      loadState_index = tonumber(loadState_index)
+      if loadState_index then
+        loadState_state.slots[loadState_index] = {
+          name = unescapeField(loadState_name),
+          value = unescapeField(loadState_value),
+          logEntry = unescapeField(loadState_logEntry),
+          severity = compromisedSeverity(unescapeField(loadState_severity)),
+          normalLogEntry = unescapeField(loadState_normalLogEntry),
+          alias = unescapeField(loadState_alias)
         }
       end
     end
   end
 
-  file:close()
-  return state
+  loadState_file:close()
+  return loadState_state
 end
 
 
-local function updateDisplayedValues()
-  for index, selector in ipairs(Controls.Control) do
-    Controls.Value[index].String = controlText(sourceControls[selector.String])
+function updateDisplayedValues()
+  for index, selector in ipairs(runtimeControls.Control) do
+    runtimeControls.Value[index].String = controlText(sourceControls[selector.String])
   end
 end
 
-local function resetControlSlots()
+function resetControlSlots()
   changingControl = true
-  for index, selector in ipairs(Controls.Control) do
+  for index, selector in ipairs(runtimeControls.Control) do
     selector.String = ""
-    Controls.Value[index].String = ""
-    Controls.Alias[index].String = ""
-    Controls.LogEntry[index].String = ""
-    Controls.NormalLogEntry[index].String = ""
-    Controls.Severity[index].String = "warning"
-    setValueColor(Controls.Value[index], COLOR_OK)
+    runtimeControls.Value[index].String = ""
+    runtimeControls.Alias[index].String = ""
+    runtimeControls.LogEntry[index].String = ""
+    runtimeControls.NormalLogEntry[index].String = ""
+    runtimeControls.Severity[index].String = "warning"
+    setValueColor(runtimeControls.Value[index], COLOR_OK)
   end
   changingControl = false
   baseline = {}
   reportedChanges = {}
 end
 
-local function releaseSourceHandlers()
+function releaseSourceHandlers()
   if sourceStatus then pcall(function() sourceStatus.EventHandler = nil end) end
   for _, control in pairs(sourceControls) do
     pcall(function() control.EventHandler = nil end)
   end
 end
 
-local function bindSourceHandlers()
+function bindSourceHandlers()
   releaseSourceHandlers()
-  local boundControls = {}
+  bindSourceHandlers_boundControls = {}
 
-  local function bindHandler(name, control)
-    if not control or boundControls[control] then return end
-    boundControls[control] = true
+  function bindHandler(name, control)
+    if not control or bindSourceHandlers_boundControls[control] then return end
+    bindSourceHandlers_boundControls[control] = true
     control.EventHandler = function()
       if reflectReady and control == sourceStatus then
         if updatingMonitorStatus then return end
-        local value, text = tonumber(controlValue(control)), controlText(control)
+        bindHandler_value, bindHandler_text = tonumber(controlValue(control)), controlText(control)
         -- Ignore our own status echo, including deferred events.
-        if value == lastDirectStatusValue and text == lastDirectStatusText then return end
-        nativeStatusValue, nativeStatusText = value or 0, text
+        if bindHandler_value == lastDirectStatusValue and bindHandler_text == lastDirectStatusText then return end
+        nativeStatusValue, nativeStatusText = bindHandler_value or 0, bindHandler_text
       end
       evaluateMonitoring(name)
     end
   end
 
   bindHandler("Status", sourceStatus)
-  for _, selector in ipairs(Controls.Control) do
-    local name = selector.String
-    if name ~= "" then bindHandler(name, sourceControls[name]) end
+  for _, selector in ipairs(runtimeControls.Control) do
+    bindSourceHandlers_name = selector.String
+    if bindSourceHandlers_name ~= "" then bindHandler(bindSourceHandlers_name, sourceControls[bindSourceHandlers_name]) end
   end
 end
 
-local function isSelectableSourceControl(name)
-  local normalizedName = string.lower(tostring(name or ""))
-  return not normalizedName:match("^log%.")
-    and not normalizedName:match("^script%.")
-    and not (reflectReady and normalizedName == "status")
+function isSelectableSourceControl(name)
+  isSelectableSourceControl_normalizedName = string.lower(tostring(name or ""))
+  return not isSelectableSourceControl_normalizedName:match("^log%.")
+    and not isSelectableSourceControl_normalizedName:match("^script%.")
+    and not (reflectReady and isSelectableSourceControl_normalizedName == "status")
 end
 
-local function bindSourceComponent()
+function bindSourceComponent()
   releaseSourceHandlers()
   sourceComponent = nil
   sourceControls = {}
@@ -755,43 +755,43 @@ local function bindSourceComponent()
   nativeStatusValue, nativeStatusText = 0, "OK"
   lastDirectStatusValue, lastDirectStatusText = nil, nil
 
-  local componentName = Controls.Component.String
-  if componentName == "" then
-    for index, selector in ipairs(Controls.Control) do
+  bindSourceComponent_componentName = runtimeControls.Component.String
+  if bindSourceComponent_componentName == "" then
+    for index, selector in ipairs(runtimeControls.Control) do
       selector.Choices = sourceControlNames
-      Controls.Value[index].String = ""
-      setValueColor(Controls.Value[index], COLOR_OK)
+      runtimeControls.Value[index].String = ""
+      setValueColor(runtimeControls.Value[index], COLOR_OK)
     end
     evaluateMonitoring()
     return
   end
 
-  local ok, descriptors = pcall(Component.GetControls, componentName)
-  if not ok or not descriptors then
-    logError("Unable to inspect component '" .. componentName .. "'", descriptors)
+  bindSourceComponent_ok, bindSourceComponent_descriptors = pcall(Component.GetControls, bindSourceComponent_componentName)
+  if not bindSourceComponent_ok or not bindSourceComponent_descriptors then
+    logError("Unable to inspect component '" .. bindSourceComponent_componentName .. "'", bindSourceComponent_descriptors)
     evaluateMonitoring()
     return
   end
 
-  ok, sourceComponent = pcall(Component.New, componentName)
-  if not ok or not sourceComponent then
-    logError("Unable to connect to component '" .. componentName .. "'", sourceComponent)
+  bindSourceComponent_ok, sourceComponent = pcall(Component.New, bindSourceComponent_componentName)
+  if not bindSourceComponent_ok or not sourceComponent then
+    logError("Unable to connect to component '" .. bindSourceComponent_componentName .. "'", sourceComponent)
     sourceComponent = nil
     evaluateMonitoring()
     return
   end
 
-  for _, descriptor in ipairs(descriptors) do
-    local name = descriptor.Name
-    local control = name and sourceComponent[name]
-    if name and control then
-      if string.lower(name) == "status" then
-        sourceStatus = control
+  for _, descriptor in ipairs(bindSourceComponent_descriptors) do
+    bindSourceComponent_name = descriptor.Name
+    bindSourceComponent_control = bindSourceComponent_name and sourceComponent[bindSourceComponent_name]
+    if bindSourceComponent_name and bindSourceComponent_control then
+      if string.lower(bindSourceComponent_name) == "status" then
+        sourceStatus = bindSourceComponent_control
         sourceStatusReadOnly = tostring(descriptor.Direction):lower():gsub("[%s%-_]", "") == "readonly"
       end
-      if isSelectableSourceControl(name) then
-        table.insert(sourceControlNames, name)
-        sourceControls[name] = control
+      if isSelectableSourceControl(bindSourceComponent_name) then
+        table.insert(sourceControlNames, bindSourceComponent_name)
+        sourceControls[bindSourceComponent_name] = bindSourceComponent_control
       end
     end
   end
@@ -818,7 +818,7 @@ local function bindSourceComponent()
     return string.lower(a) < string.lower(b)
   end)
 
-  for _, selector in ipairs(Controls.Control) do
+  for _, selector in ipairs(runtimeControls.Control) do
     selector.Choices = sourceControlNames
     if selector.String ~= "" and not sourceControls[selector.String] then
       selector.String = ""
@@ -830,7 +830,7 @@ local function bindSourceComponent()
   evaluateMonitoring()
 end
 
-local function bindMonitorComponent()
+function bindMonitorComponent()
   if reflectReady then
     evaluateMonitoring()
     return
@@ -839,67 +839,67 @@ local function bindMonitorComponent()
     pcall(function() monitorComponent["status"].EventHandler = nil end)
   end
   monitorComponent = nil
-  local monitorName = Controls.Monitor.String
-  if monitorName == "" then
+  bindMonitorComponent_monitorName = runtimeControls.Monitor.String
+  if bindMonitorComponent_monitorName == "" then
     evaluateMonitoring()
     return
   end
 
-  local ok, component = pcall(Component.New, monitorName)
-  if not ok or not component then
-    logError("Unable to connect to Monitoring Proxy '" .. monitorName .. "'", component)
+  bindMonitorComponent_ok, bindMonitorComponent_component = pcall(Component.New, bindMonitorComponent_monitorName)
+  if not bindMonitorComponent_ok or not bindMonitorComponent_component then
+    logError("Unable to connect to Monitoring Proxy '" .. bindMonitorComponent_monitorName .. "'", bindMonitorComponent_component)
     evaluateMonitoring()
     return
   end
 
-  monitorComponent = component
-  local targetStatus = monitorComponent["status"]
-  if targetStatus then targetStatus.EventHandler = monitorStatusChanged end
+  monitorComponent = bindMonitorComponent_component
+  bindMonitorComponent_targetStatus = monitorComponent["status"]
+  if bindMonitorComponent_targetStatus then bindMonitorComponent_targetStatus.EventHandler = monitorStatusChanged end
   evaluateMonitoring()
 end
 
-local function captureBaseline()
+function captureBaseline()
   baseline = {}
   reportedChanges = {}
-  lockedComponentName = Controls.Component.String
-  lockedMonitorName = Controls.Monitor.String
+  lockedComponentName = runtimeControls.Component.String
+  lockedMonitorName = runtimeControls.Monitor.String
 
-  for index, selector in ipairs(Controls.Control) do
+  for index, selector in ipairs(runtimeControls.Control) do
     baseline[index] = {
       name = selector.String,
       value = controlText(sourceControls[selector.String]),
-      logEntry = Controls.LogEntry[index].String,
-      normalLogEntry = Controls.NormalLogEntry[index].String,
-      severity = Controls.Severity[index].String,
-      alias = Controls.Alias[index].String
+      logEntry = runtimeControls.LogEntry[index].String,
+      normalLogEntry = runtimeControls.NormalLogEntry[index].String,
+      severity = runtimeControls.Severity[index].String,
+      alias = runtimeControls.Alias[index].String
     }
   end
 end
 
-local function applyLock()
-  local locked = Controls.Lock.Boolean
-  Controls.Lock.Color = locked and COLOR_LOCKED or COLOR_UNLOCKED
-  Controls.Component.IsDisabled = locked
-  Controls.Monitor.IsDisabled = locked
-  for _, selector in ipairs(Controls.Control) do
-    selector.IsDisabled = locked
+function applyLock()
+  applyLock_locked = runtimeControls.Lock.Boolean
+  runtimeControls.Lock.Color = applyLock_locked and COLOR_LOCKED or COLOR_UNLOCKED
+  runtimeControls.Component.IsDisabled = applyLock_locked
+  runtimeControls.Monitor.IsDisabled = applyLock_locked
+  for _, selector in ipairs(runtimeControls.Control) do
+    selector.IsDisabled = applyLock_locked
   end
-  for _, logEntry in ipairs(Controls.LogEntry) do
-    logEntry.IsDisabled = locked or reflectReady
+  for _, logEntry in ipairs(runtimeControls.LogEntry) do
+    logEntry.IsDisabled = applyLock_locked or reflectReady
   end
-  for _, logEntry in ipairs(Controls.NormalLogEntry) do
-    logEntry.IsDisabled = locked or reflectReady
+  for _, logEntry in ipairs(runtimeControls.NormalLogEntry) do
+    logEntry.IsDisabled = applyLock_locked or reflectReady
   end
-  for _, severity in ipairs(Controls.Severity) do
-    severity.IsDisabled = locked or reflectReady
+  for _, severity in ipairs(runtimeControls.Severity) do
+    severity.IsDisabled = applyLock_locked or reflectReady
   end
-  for _, alias in ipairs(Controls.Alias) do
-    alias.IsDisabled = locked
+  for _, alias in ipairs(runtimeControls.Alias) do
+    alias.IsDisabled = applyLock_locked
   end
 end
 
-local function restoreLockedSelection(control, expected)
-  if not Controls.Lock.Boolean or control.String == expected then return false end
+function restoreLockedSelection(control, expected)
+  if not runtimeControls.Lock.Boolean or control.String == expected then return false end
 
   changingControl = true
   control.String = expected or ""
@@ -916,130 +916,130 @@ evaluateMonitoring = function()
     return
   end
 
-  local sourceStatusText = "OK"
+  callback_sourceStatusText = "OK"
   if sourceStatus then
-    local ok, statusValue = pcall(function() return sourceStatus.Value end)
-    if not ok then
+    callback_ok, callback_statusValue = pcall(function() return sourceStatus.Value end)
+    if not callback_ok then
       setMonitorStatus(1, "Unable to read selected component status")
       return
     end
 
-    sourceStatusText = controlText(sourceStatus)
-    statusValue = tonumber(statusValue) or 0
+    callback_sourceStatusText = controlText(sourceStatus)
+    callback_statusValue = tonumber(callback_statusValue) or 0
     if reflectReady then
-      statusValue = nativeStatusValue
-      sourceStatusText = nativeStatusText
+      callback_statusValue = nativeStatusValue
+      callback_sourceStatusText = nativeStatusText
     end
     print(string.format(
       "[Monitor Debug] source Status evaluated: value=%s, string=%q",
-      tostring(statusValue), sourceStatusText
+      tostring(callback_statusValue), callback_sourceStatusText
     ))
-    if statusValue ~= 0 then
+    if callback_statusValue ~= 0 then
       -- A source fault takes priority on the Monitoring Proxy, but it must not
       -- erase the last known baseline comparison. Re-evaluate colors when the
       -- source returns to OK.
-      setMonitorStatus(statusValue, sourceStatusText, statusValue == 4)
+      setMonitorStatus(callback_statusValue, callback_sourceStatusText, callback_statusValue == 4)
       return
     end
   end
 
-  if not Controls.Lock.Boolean then
+  if not runtimeControls.Lock.Boolean then
     reportedChanges = {}
-    for _, output in ipairs(Controls.Value) do setValueColor(output, COLOR_OK) end
-    setMonitorStatus(0, sourceStatusText)
+    for _, output in ipairs(runtimeControls.Value) do setValueColor(output, COLOR_OK) end
+    setMonitorStatus(0, callback_sourceStatusText)
     return
   end
 
-  local changes = {}
-  for index, selector in ipairs(Controls.Control) do
-    local item = baseline[index] or { name = "", value = "" }
-    local currentValue = controlText(sourceControls[selector.String])
-    local changed = selector.String ~= item.name or currentValue ~= item.value
+  callback_changes = {}
+  for index, selector in ipairs(runtimeControls.Control) do
+    callback_item = baseline[index] or { name = "", value = "" }
+    callback_currentValue = controlText(sourceControls[selector.String])
+    callback_changed = selector.String ~= callback_item.name or callback_currentValue ~= callback_item.value
 
-    setValueColor(Controls.Value[index], changed and COLOR_CHANGED or COLOR_OK)
+    setValueColor(runtimeControls.Value[index], callback_changed and COLOR_CHANGED or COLOR_OK)
 
-    if changed then
-      local name = controlDisplayName(index)
-      table.insert(changes, string.format("%s: %s -> %s", name, item.value, currentValue))
+    if callback_changed then
+      callback_name = controlDisplayName(index)
+      table.insert(callback_changes, string.format("%s: %s -> %s", callback_name, callback_item.value, callback_currentValue))
 
       if not reportedChanges[index] then
-        sendMonitorLog(Controls.LogEntry[index].String, compromisedSeverity(Controls.Severity[index].String))
+        sendMonitorLog(runtimeControls.LogEntry[index].String, compromisedSeverity(runtimeControls.Severity[index].String))
         reportedChanges[index] = true
       end
     else
       if reportedChanges[index] then
-        sendMonitorLog(Controls.NormalLogEntry[index].String, "normal")
+        sendMonitorLog(runtimeControls.NormalLogEntry[index].String, "normal")
       end
       reportedChanges[index] = false
     end
   end
 
-  if #changes > 0 then
-    setMonitorStatus(1, "Changed: " .. table.concat(changes, "; "))
+  if #callback_changes > 0 then
+    setMonitorStatus(1, "Changed: " .. table.concat(callback_changes, "; "))
   else
-    setMonitorStatus(0, sourceStatusText)
+    setMonitorStatus(0, callback_sourceStatusText)
   end
 end
 
-local function componentSelectionChanged()
+function componentSelectionChanged()
   if changingControl then return end
-  if restoreLockedSelection(Controls.Component, lockedComponentName) then return end
+  if restoreLockedSelection(runtimeControls.Component, lockedComponentName) then return end
   resetControlSlots()
   bindSourceComponent()
 end
 
-local function monitorSelectionChanged()
+function monitorSelectionChanged()
   if changingControl then return end
-  if restoreLockedSelection(Controls.Monitor, lockedMonitorName) then return end
+  if restoreLockedSelection(runtimeControls.Monitor, lockedMonitorName) then return end
   bindMonitorComponent()
 end
 
-local function selectedControlChanged(index)
+function selectedControlChanged(index)
   if changingControl then return end
 
-  local expected = baseline[index] and baseline[index].name or ""
-  if restoreLockedSelection(Controls.Control[index], expected) then
+  selectedControlChanged_expected = baseline[index] and baseline[index].name or ""
+  if restoreLockedSelection(runtimeControls.Control[index], selectedControlChanged_expected) then
     updateDisplayedValues()
     return
   end
 
-  local selectedName = Controls.Control[index].String
-  Controls.Alias[index].String = ""
-  Controls.NormalLogEntry[index].String = selectedName ~= ""
+  selectedControlChanged_selectedName = runtimeControls.Control[index].String
+  runtimeControls.Alias[index].String = ""
+  runtimeControls.NormalLogEntry[index].String = selectedControlChanged_selectedName ~= ""
     and controlDisplayName(index) .. " is back to normal." or ""
-  if selectedName == "" then
-    Controls.LogEntry[index].String = ""
+  if selectedControlChanged_selectedName == "" then
+    runtimeControls.LogEntry[index].String = ""
   else
-    Controls.LogEntry[index].String = defaultLogEntry(
+    runtimeControls.LogEntry[index].String = defaultLogEntry(
       controlDisplayName(index),
-      sourceControls[selectedName]
+      sourceControls[selectedControlChanged_selectedName]
     )
   end
   bindSourceHandlers()
   evaluateMonitoring()
 end
 
-local function aliasChanged(index)
-  if changingControl or Controls.Lock.Boolean then return end
+function aliasChanged(index)
+  if changingControl or runtimeControls.Lock.Boolean then return end
 
-  local selectedName = Controls.Control[index].String
-  Controls.NormalLogEntry[index].String = selectedName ~= ""
+  aliasChanged_selectedName = runtimeControls.Control[index].String
+  runtimeControls.NormalLogEntry[index].String = aliasChanged_selectedName ~= ""
     and controlDisplayName(index) .. " is back to normal." or ""
-  if selectedName == "" then
-    Controls.LogEntry[index].String = ""
+  if aliasChanged_selectedName == "" then
+    runtimeControls.LogEntry[index].String = ""
     return
   end
 
-  Controls.LogEntry[index].String = defaultLogEntry(
+  runtimeControls.LogEntry[index].String = defaultLogEntry(
     controlDisplayName(index),
-    sourceControls[selectedName]
+    sourceControls[aliasChanged_selectedName]
   )
 end
 
-local function lockChanged()
+function lockChanged()
   applyLock()
 
-  if Controls.Lock.Boolean then
+  if runtimeControls.Lock.Boolean then
     captureBaseline()
     saveState(true)
   else
@@ -1053,45 +1053,45 @@ local function lockChanged()
   evaluateMonitoring()
 end
 
-local function discoverComponents()
-  local componentNames = {}
-  local monitorNames = {}
+function discoverComponents()
+  discoverComponents_componentNames = {}
+  discoverComponents_monitorNames = {}
 
   for _, component in ipairs(Component.GetComponents()) do
     if component.Type == "monitoring_proxy" then
-      table.insert(monitorNames, component.Name)
+      table.insert(discoverComponents_monitorNames, component.Name)
     else
-      table.insert(componentNames, component.Name)
+      table.insert(discoverComponents_componentNames, component.Name)
     end
   end
 
-  table.sort(componentNames, function(a, b) return string.lower(a) < string.lower(b) end)
-  table.sort(monitorNames, function(a, b) return string.lower(a) < string.lower(b) end)
-  Controls.Component.Choices = componentNames
-  Controls.Monitor.Choices = monitorNames
+  table.sort(discoverComponents_componentNames, function(a, b) return string.lower(a) < string.lower(b) end)
+  table.sort(discoverComponents_monitorNames, function(a, b) return string.lower(a) < string.lower(b) end)
+  runtimeControls.Component.Choices = discoverComponents_componentNames
+  runtimeControls.Monitor.Choices = discoverComponents_monitorNames
 end
 
 discoverComponents()
 
-for index = 1, #Controls.Control do
-  Controls.Severity[index].Choices = { "warning", "error" }
-  Controls.Severity[index].String = compromisedSeverity(Controls.Severity[index].String)
+for index = 1, #runtimeControls.Control do
+  runtimeControls.Severity[index].Choices = { "warning", "error" }
+  runtimeControls.Severity[index].String = compromisedSeverity(runtimeControls.Severity[index].String)
 end
 
-local savedState = loadState()
+savedState = loadState()
 if savedState then
   changingControl = true
-  Controls.Lock.Boolean = savedState.locked
+  runtimeControls.Lock.Boolean = savedState.locked
   if savedState.locked then
-    Controls.Component.String = savedState.component
-    Controls.Monitor.String = savedState.monitor
+    runtimeControls.Component.String = savedState.component
+    runtimeControls.Monitor.String = savedState.monitor
     for index, item in pairs(savedState.slots) do
-      if Controls.Control[index] then
-        Controls.Control[index].String = item.name
-        Controls.Alias[index].String = item.alias or ""
-        Controls.LogEntry[index].String = item.logEntry or ""
-        Controls.NormalLogEntry[index].String = item.normalLogEntry or ""
-        Controls.Severity[index].String = compromisedSeverity(item.severity)
+      if runtimeControls.Control[index] then
+        runtimeControls.Control[index].String = item.name
+        runtimeControls.Alias[index].String = item.alias or ""
+        runtimeControls.LogEntry[index].String = item.logEntry or ""
+        runtimeControls.NormalLogEntry[index].String = item.normalLogEntry or ""
+        runtimeControls.Severity[index].String = compromisedSeverity(item.severity)
       end
     end
   end
@@ -1106,12 +1106,12 @@ end
 
 bindSourceComponent()
 
-for index, selector in ipairs(Controls.Control) do
-  if selector.String ~= "" and Controls.NormalLogEntry[index].String == "" then
-    Controls.NormalLogEntry[index].String = controlDisplayName(index) .. " is back to normal."
+for index, selector in ipairs(runtimeControls.Control) do
+  if selector.String ~= "" and runtimeControls.NormalLogEntry[index].String == "" then
+    runtimeControls.NormalLogEntry[index].String = controlDisplayName(index) .. " is back to normal."
   end
-  if selector.String ~= "" and Controls.LogEntry[index].String == "" then
-    Controls.LogEntry[index].String = defaultLogEntry(
+  if selector.String ~= "" and runtimeControls.LogEntry[index].String == "" then
+    runtimeControls.LogEntry[index].String = defaultLogEntry(
       controlDisplayName(index),
       sourceControls[selector.String]
     )
@@ -1121,23 +1121,26 @@ end
 bindMonitorComponent()
 applyLock()
 
-if not savedState and Controls.Lock.Boolean then
+if not savedState and runtimeControls.Lock.Boolean then
   captureBaseline()
   saveState(true)
 end
 
-Controls.Component.EventHandler = componentSelectionChanged
-Controls.Monitor.EventHandler = monitorSelectionChanged
-Controls.Lock.EventHandler = lockChanged
+runtimeControls.Component.EventHandler = componentSelectionChanged
+runtimeControls.Monitor.EventHandler = monitorSelectionChanged
+runtimeControls.Lock.EventHandler = lockChanged
 
-for index, selector in ipairs(Controls.Control) do
-  local controlIndex = index
+function bindRowHandlers(controlIndex, selector)
   selector.EventHandler = function()
     selectedControlChanged(controlIndex)
   end
-  Controls.Alias[index].EventHandler = function()
+  runtimeControls.Alias[controlIndex].EventHandler = function()
     aliasChanged(controlIndex)
   end
+end
+
+for index, selector in ipairs(runtimeControls.Control) do
+  bindRowHandlers(index, selector)
 end
 
 evaluateMonitoring()

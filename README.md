@@ -26,7 +26,7 @@ It captures a baseline configuration, detects later value changes, updates the M
 | Property | Value |
 | --- | --- |
 | Name | Reflect Monitor Extension |
-| Version | 1.1.0 |
+| Version | 1.2.0.0 |
 | Author | Jens Claerebout |
 
 ## Requirements
@@ -43,6 +43,9 @@ The source component does not need a `Status` control. When one is present, its 
 | Property | Description |
 | --- | --- |
 | `Number of Controls` | Number of control rows to monitor (1-32) |
+| `Netgear AV Switch` | Enable Netgear switch discovery, automatic port recovery, and the manual reset button (default `false`). |
+| `Switch Port` | Port to reset, 1-48; visible when Netgear is enabled. |
+| `Min Before Port Reset` | Continuous Missing/Fault duration before reset, 1-60 minutes (default 5); visible when Netgear is enabled. |
 | `Reflect Ready` | Boolean, default `false`. Enable to write status directly to the selected component's writable `Status` control without a Monitoring Proxy. |
 
 ### Plugin Controls
@@ -103,13 +106,21 @@ Log entries are only supported through a Monitoring Proxy. Reflect Ready mode do
 
 Reflect Ready baselines are stored separately using the selected component's Code Name; use one extension per target component. External-proxy mode retains its existing filenames.
 
+### Netgear Switch Port Recovery
+
+Enable `Netgear AV Switch`, then select the switch and configure `Switch Port` and `Min Before Port Reset`. The selector discovers compatible Netgear AV Switch plugin instances. Enable Script Access and set the switch plugin's `write access` property to Yes. Missing or read-only `EnablePoE <port>` / `EnablePort <port>` controls produce a configuration message.
+
+A continuous source Fault (2) or Missing (4) status starts the delay. Recovery cancels the pending reset. At expiry, the extension disables PoE and the port, waits five seconds, then enables both. It attempts both restore writes even after a partial failure. One automatic reset runs per fault episode; a healthy status re-arms recovery. Baseline differences do not trigger resets.
+
+The `Reset Switch Port` button appears when Netgear is enabled and runs the same sequence immediately. It is disabled during a reset. Reset warnings go to the selected Monitoring Proxy; Reflect Ready mode retains its existing lack of proxy logging. The switch selection is saved with the locked configuration. Active resets finish restoring the original port even if the selection changes.
+
 ### Persistence
 
 The locked configuration and baseline are stored in a text file in the Core's `media` directory. The state filename is derived from the selected Monitoring Proxy Code Name so separate proxy instances can maintain separate state.
 
 ## Installation
 
-1. Place `Reflect-Monitor-Extension.qplug` in the Q-SYS plugin directory or deploy it through Q-SYS Designer.
+1. Double-click `Reflect-Monitor-Extension.qplug`; QSysPluginHelper will prompt you to install the plugin.
 2. Add the plugin to the design.
 3. Set `Number of Controls` to the required number of monitored controls.
 4. Give the desired source component or plugin and Monitoring Proxy unique Code Names and enable Script Access.
@@ -123,7 +134,7 @@ The locked configuration and baseline are stored in a text file in the Core's `m
 - Changing the selected source component clears the configured control rows.
 - The default log text is generated from the alias or control name and the value present when the control is selected.
 - The Monitoring Proxy Code Name identifies the saved state and should remain unique and stable.
-- Debug messages are enabled in version 1.1.0 and are written to the Q-SYS script log.
+- Debug messages are enabled in version 1.2.0.0 and are written to the Q-SYS script log.
 
 ## Known Limitations
 
@@ -131,6 +142,14 @@ The locked configuration and baseline are stored in a text file in the Core's `m
 - Component and control discovery occurs when the plugin script starts or when the source selection changes.
 
 ## Changelog
+
+### 1.2.0
+
+- Added optional Netgear AV Switch discovery, port settings, and write-access validation.
+- Added automatic port and PoE resets after sustained Fault/Missing status, with a five-second restoration delay and proxy warning logs.
+- Added the conditional Reset Switch Port button and saved switch selection.
+- Clear stale Netgear selection and write-access warnings immediately when validation succeeds and refresh the monitoring status.
+- Shortened switch reset log entries to `<name> port <x> reset (<reason>)`.
 
 ### 1.1.0
 

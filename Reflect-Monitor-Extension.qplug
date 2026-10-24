@@ -1,4 +1,4 @@
-BuildVersion = "1.1.0.0"
+BuildVersion = "1.2.0.0"
 PluginInfo = {
   Name = "Monitoring~Reflect Monitor Extension v" .. BuildVersion, -- preferred format is "manufacturer~plugin name version"
   Version = BuildVersion,
@@ -14,6 +14,10 @@ end
 
 function isReflectReady(props)
   return props["Reflect Ready"] ~= nil and props["Reflect Ready"].Value == true
+end
+
+function isNetgearEnabled(props)
+  return props["Netgear AV Switch"] ~= nil and props["Netgear AV Switch"].Value == true
 end
 
 function compromisedSeverity(value)
@@ -33,12 +37,20 @@ function GetProperties()
       Name = "Reflect Ready",
       Type = "boolean",
       Value = false
-    }
+    },
+    { Name = "Netgear AV Switch", Type = "boolean", Value = false },
+    { Name = "Switch Port", Type = "integer", Value = 1, Min = 1, Max = 48 },
+    { Name = "Min Before Port Reset", Type = "integer", Value = 5, Min = 1, Max = 60 }
   }
 end
 
 function RectifyProperties(props)
   props["Number of Controls"].Value = controlCount(props)
+  for _, name in ipairs({ "Switch Port", "Min Before Port Reset" }) do
+    props[name].IsHidden = not isNetgearEnabled(props)
+    local maximum = name == "Switch Port" and 48 or 60
+    props[name].Value = math.max(1, math.min(maximum, math.floor(tonumber(props[name].Value) or 1)))
+  end
   return props
 end
 
@@ -62,6 +74,19 @@ function GetControls(props)
     },
     {
       Name = "Component",
+      ControlType = "Text",
+      Count = 1,
+      UserPin = false
+    },
+    {
+      Name = "ResetSwitchPort",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      Count = 1,
+      UserPin = false
+    },
+    {
+      Name = "NetgearSwitch",
       ControlType = "Text",
       Count = 1,
       UserPin = false
@@ -134,6 +159,9 @@ function GetControlLayout(props)
   GetControlLayout_reflectReady = isReflectReady(props)
   GetControlLayout_firstRowY = GetControlLayout_reflectReady and 151 or 192
   GetControlLayout_statusY = GetControlLayout_reflectReady and 68 or 109
+  if isNetgearEnabled(props) then
+    GetControlLayout_firstRowY = GetControlLayout_firstRowY + 41
+  end
   GetControlLayout_headerY = GetControlLayout_firstRowY - 38
   GetControlLayout_panelHeight = GetControlLayout_firstRowY + GetControlLayout_count * (GetControlLayout_rowHeight + GetControlLayout_rowGap) + 18
 
@@ -258,6 +286,19 @@ function GetControlLayout(props)
         TextFontSize = 12
       }
     end
+  end
+
+  if isNetgearEnabled(props) then
+    local switchY = GetControlLayout_statusY + 41
+    addLabel("Netgear AV Switch", 35, switchY, 145, 31, "Left", 15)
+    GetControlLayout_layout.ResetSwitchPort = {
+      PrettyName = "Reset Switch Port", Position = { 665, switchY },
+      Size = { 190, 31 }, Style = "Button", Legend = "Reset Switch Port", TextFontSize = 14
+    }
+    GetControlLayout_layout.NetgearSwitch = {
+      PrettyName = "Netgear AV Switch", Position = { 180, switchY },
+      Size = { 470, 31 }, Style = "ComboBox", TextFontSize = 14
+    }
   end
 
   -- Keep both layouts and all row counts at the same compact scale.
@@ -614,6 +655,7 @@ function saveState(locked)
   saveState_file:write("version\t4\n")
   saveState_file:write("locked\t", locked and "1" or "0", "\n")
   saveState_file:write("component\t", escapeField(lockedComponentName), "\n")
+  saveState_file:write("switch\t", escapeField(runtimeControls.NetgearSwitch.String), "\n")
   saveState_file:write("monitor\t", escapeField(lockedMonitorName), "\n")
 
   for index = 1, #runtimeControls.Control do
@@ -650,6 +692,8 @@ function loadState()
       loadState_state.component = unescapeField(loadState_rest)
     elseif loadState_key == "monitor" then
       loadState_state.monitor = unescapeField(loadState_rest)
+    elseif loadState_key == "switch" then
+      loadState_state.switch = unescapeField(loadState_rest)
     elseif loadState_key == "slot" then
       loadState_index, loadState_name, loadState_value, loadState_logEntry, loadState_severity, loadState_alias, loadState_normalLogEntry =
         loadState_rest:match("^(%d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t(.*)$")
@@ -881,6 +925,7 @@ function applyLock()
   runtimeControls.Lock.Color = applyLock_locked and COLOR_LOCKED or COLOR_UNLOCKED
   runtimeControls.Component.IsDisabled = applyLock_locked
   runtimeControls.Monitor.IsDisabled = applyLock_locked
+  runtimeControls.NetgearSwitch.IsDisabled = applyLock_locked
   for _, selector in ipairs(runtimeControls.Control) do
     selector.IsDisabled = applyLock_locked
   end
@@ -910,6 +955,11 @@ end
 evaluateMonitoring = function()
   if reflectReady and updatingMonitorStatus then return end
   updateDisplayedValues()
+
+  if netgearConfigurationError then
+    setMonitorStatus(1, netgearConfigurationError)
+    return
+  end
 
   if not sourceComponent then
     setMonitorStatus(1, "Selected component is unavailable")
@@ -1053,11 +1103,131 @@ function lockChanged()
   evaluateMonitoring()
 end
 
+-- Keep timers referenced for the lifetime of the plugin.
+portFaultTimer = Timer.New()
+portRestoreTimer = Timer.New()
+portPollTimer = Timer.New()
+portFaultPending = false
+portResetActive = false
+portFaultHandled = false
+portFaultSource = nil
+
+function netgearControls()
+  local name = runtimeControls.NetgearSwitch.String
+  if name == "" then return nil, "Select a Netgear AV Switch" end
+  local ok, target = pcall(Component.New, name)
+  if not ok or not target then return nil, "Selected Netgear AV Switch is unavailable" end
+  local port = tostring(Properties["Switch Port"].Value)
+  local success, poe, enabled = pcall(function()
+    return target["EnablePoE " .. port], target["EnablePort " .. port]
+  end)
+  if not success or not poe or not enabled then
+    return nil, "Netgear AV Switch: set property 'write access' to Yes"
+  end
+  local descriptorOK, descriptors = pcall(Component.GetControls, name)
+  if descriptorOK then
+    for _, descriptor in ipairs(descriptors) do
+      if descriptor.Name == "EnablePoE " .. port or descriptor.Name == "EnablePort " .. port then
+        if tostring(descriptor.Direction):lower():gsub("[%s%-_]", "") == "readonly" then
+          return nil, "Netgear AV Switch: set property 'write access' to Yes"
+        end
+      end
+    end
+  end
+  return { poe, enabled }
+end
+
+function pollPortReset()
+  if not isNetgearEnabled(Properties) then return end
+  local controls, err = netgearControls()
+  local status = reflectReady and nativeStatusValue or tonumber(controlValue(sourceStatus))
+  local fault = sourceComponent ~= nil and (status == 2 or status == 4)
+  local source = runtimeControls.Component.String .. "|" .. runtimeControls.NetgearSwitch.String
+  if not fault or source ~= portFaultSource or not controls then
+    portFaultTimer:Stop()
+    portFaultPending = false
+    portFaultHandled = false
+  end
+  portFaultSource = source
+  local validationChanged = netgearConfigurationError ~= err
+  netgearConfigurationError = err
+  if validationChanged then evaluateMonitoring() end
+  if err then return end
+  if fault and not portFaultPending and not portResetActive and not portFaultHandled then
+    portFaultPending = true
+    portFaultTimer:Start(Properties["Min Before Port Reset"].Value * 60)
+  end
+end
+
+function resetSwitchPort(reason)
+  if not isNetgearEnabled(Properties) or portResetActive then return end
+  local controls, err = netgearControls()
+  if not controls then
+    runtimeControls.Status.Value = 1
+    runtimeControls.Status.String = err
+    return
+  end
+  portFaultTimer:Stop()
+  portFaultPending = false
+  portResetActive = true
+  runtimeControls.ResetSwitchPort.IsDisabled = true
+  portFaultHandled = true
+  portRestoreControls = controls
+  local ok, failure = pcall(function()
+    controls[1].Boolean = false
+    controls[2].Boolean = false
+  end)
+  -- Always attempt restoration, even when only the first write succeeded.
+  portRestoreTimer:Start(5)
+  sendMonitorLog(runtimeControls.NetgearSwitch.String
+    .. " port " .. tostring(Properties["Switch Port"].Value)
+    .. (ok and " reset (" .. reason .. ")"
+      or " reset failed; set property 'write access' to Yes: " .. tostring(failure)), "warning")
+end
+
+portFaultTimer.EventHandler = function()
+  portFaultTimer:Stop()
+  local expectedSource = portFaultSource
+  local wasPending = portFaultPending
+  pollPortReset()
+  if wasPending and portFaultPending and expectedSource == portFaultSource then
+    resetSwitchPort("sustained Missing/Fault status")
+  end
+end
+
+runtimeControls.ResetSwitchPort.EventHandler = function()
+  resetSwitchPort("manual")
+end
+
+portRestoreTimer.EventHandler = function()
+  portRestoreTimer:Stop()
+  local failures = {}
+  for _, control in ipairs(portRestoreControls or {}) do
+    local ok, err = pcall(function() control.Boolean = true end)
+    if not ok then table.insert(failures, tostring(err)) end
+  end
+  portResetActive = false
+  runtimeControls.ResetSwitchPort.IsDisabled = false
+  if #failures > 0 then
+    runtimeControls.Status.Value = 1
+    runtimeControls.Status.String = "Netgear port restore failed; set property 'write access' to Yes"
+    sendMonitorLog(runtimeControls.Status.String .. ": " .. table.concat(failures, "; "), "warning")
+  end
+end
+
+portPollTimer.EventHandler = pollPortReset
+runtimeControls.NetgearSwitch.EventHandler = pollPortReset
+portPollTimer:Start(1)
+
 function discoverComponents()
   discoverComponents_componentNames = {}
   discoverComponents_monitorNames = {}
+  local switchNames = {}
 
   for _, component in ipairs(Component.GetComponents()) do
+    if component.Type == "%PLUGIN%_5ba63a53-4459-4be4-938f-f3a40c055026_%FP%_4fb32d0097f15f5edb51970a6f445f95" then
+      table.insert(switchNames, component.Name)
+    end
     if component.Type == "monitoring_proxy" then
       table.insert(discoverComponents_monitorNames, component.Name)
     else
@@ -1069,6 +1239,8 @@ function discoverComponents()
   table.sort(discoverComponents_monitorNames, function(a, b) return string.lower(a) < string.lower(b) end)
   runtimeControls.Component.Choices = discoverComponents_componentNames
   runtimeControls.Monitor.Choices = discoverComponents_monitorNames
+  table.sort(switchNames, function(a, b) return a:lower() < b:lower() end)
+  runtimeControls.NetgearSwitch.Choices = switchNames
 end
 
 discoverComponents()
@@ -1085,6 +1257,7 @@ if savedState then
   if savedState.locked then
     runtimeControls.Component.String = savedState.component
     runtimeControls.Monitor.String = savedState.monitor
+    runtimeControls.NetgearSwitch.String = savedState.switch or ""
     for index, item in pairs(savedState.slots) do
       if runtimeControls.Control[index] then
         runtimeControls.Control[index].String = item.name
